@@ -2,10 +2,35 @@
 
 import { Moon, Sun } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 export function ThemeToggle({ collapsed }: { collapsed?: boolean }) {
   const [isDark, setIsDark] = useState(false);
+
+  useEffect(() => {
+    // Check for saved theme preference or default to light mode
+    const savedTheme = localStorage.getItem("theme");
+    const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
+    const isDarkMode = savedTheme === "dark" || (!savedTheme && prefersDark);
+    
+    setIsDark(isDarkMode);
+    if (isDarkMode) {
+      document.documentElement.classList.add("dark");
+    }
+  }, []);
+
+  const toggleTheme = () => {
+    const newIsDark = !isDark;
+    setIsDark(newIsDark);
+    
+    if (newIsDark) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
 
   return (
     <div
@@ -14,7 +39,7 @@ export function ThemeToggle({ collapsed }: { collapsed?: boolean }) {
         collapsed && "w-[40px] h-[84px] flex-col",
         isDark ? "justify-end" : "justify-start",
       )}
-      onClick={() => setIsDark(!isDark)}
+      onClick={toggleTheme}
     >
       {/* Toggle Items Background - This creates the switch effect */}
       {/* We use absolute positioning for the background pill */}

@@ -60,12 +60,7 @@ export default function DashboardPage() {
           </p>
         </div>
         <div className="flex items-center gap-3">
-          <Button
-            variant="outline"
-            className="rounded-full px-6 h-12 bg-background border-border hover:bg-secondary"
-          >
-            <Calendar className="mr-2 h-4 w-4" /> This Month
-          </Button>
+          
           <Button
             className="rounded-full px-6 h-12 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow"
             onClick={() => setShowAddWidgetDialog(true)}
@@ -79,25 +74,25 @@ export default function DashboardPage() {
       <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-4">
         <KPICard
           title="Total Balance"
-          value={`$${metrics.balance.toLocaleString()}`}
+          value={`₹${metrics.balance.toLocaleString()}`}
           trend={`${metrics.savingsRate}%`} // Using savings rate as trend for now
           trendUp={metrics.balance >= 0}
         />
         <KPICard
           title="Income"
-          value={`$${metrics.income.toLocaleString()}`}
+          value={`₹${metrics.income.toLocaleString()}`}
           trend="0%"
           trendUp={true}
         />
         <KPICard
           title="Expense"
-          value={`$${metrics.expense.toLocaleString()}`}
+          value={`₹${metrics.expense.toLocaleString()}`}
           trend="0%"
           trendUp={false}
         />
         <KPICard
           title="Total Savings"
-          value={`$${metrics.savings.toLocaleString()}`}
+          value={`₹${metrics.savings.toLocaleString()}`}
           trend={`${metrics.savingsRate}%`}
           trendUp={metrics.savings >= 0}
         />
