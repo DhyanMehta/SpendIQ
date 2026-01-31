@@ -23,7 +23,17 @@ model User {
 
   sessions       Session[]
   auditLogs      AuditLog[]
-  createdBudgets Budget[]   @relation("BudgetCreator")
+
+  // Created entities
+  createdBudgets        Budget[]        @relation("BudgetCreator")
+  createdContacts       Contact[]       @relation("ContactCreator")
+  createdProducts       Product[]       @relation("ProductCreator")
+  createdPurchaseOrders PurchaseOrder[] @relation("POCreator")
+  createdSalesOrders    SalesOrder[]    @relation("SOCreator")
+  createdInvoices       Invoice[]       @relation("InvoiceCreator")
+  createdPayments       Payment[]       @relation("PaymentCreator")
+  createdJournalEntries JournalEntry[]  @relation("JournalEntryCreator")
+
   contact        Contact?   @relation("PortalUser")
   
   @@map("users")
@@ -80,6 +90,9 @@ model Contact {
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
 
+  createdById String?
+  creator     User?     @relation("ContactCreator", fields: [createdById], references: [id])
+
   @@map("contacts")
 }
 
@@ -121,6 +134,9 @@ model Product {
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  createdById String?
+  creator     User?    @relation("ProductCreator", fields: [createdById], references: [id])
 
   @@map("products")
 }
@@ -282,6 +298,9 @@ model PurchaseOrder {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  createdById String?
+  creator     User?    @relation("POCreator", fields: [createdById], references: [id])
+
   @@map("purchase_orders")
 }
 
@@ -326,6 +345,9 @@ model SalesOrder {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  createdById String?
+  creator     User?    @relation("SOCreator", fields: [createdById], references: [id])
 
   @@map("sales_orders")
 }
@@ -386,6 +408,9 @@ model Invoice {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  createdById String?
+  creator     User?    @relation("InvoiceCreator", fields: [createdById], references: [id])
 
   @@index([date])
   @@index([partnerId])
@@ -458,6 +483,9 @@ model Payment {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  createdById String?
+  creator     User?    @relation("PaymentCreator", fields: [createdById], references: [id])
+
   @@map("payments")
 }
 
@@ -508,6 +536,9 @@ model JournalEntry {
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
+
+  createdById String?
+  creator     User?    @relation("JournalEntryCreator", fields: [createdById], references: [id])
 
   @@index([date])
   @@map("journal_entries")

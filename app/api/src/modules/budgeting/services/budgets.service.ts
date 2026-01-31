@@ -17,31 +17,31 @@ enum BudgetStatus {
 
 /**
  * Budgets Service
- * 
+ *
  * Handles all budget-related business logic including:
  * - Creating new budgets linked to analytic accounts
  * - Updating draft budgets
  * - Approving budgets (DRAFT -> CONFIRMED)
  * - Creating revisions of confirmed budgets
- * 
+ *
  * Budget Workflow:
  * DRAFT -> CONFIRMED -> REVISED (when revision created)
  *                    -> ARCHIVED (manual)
  */
 @Injectable()
 export class BudgetsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Create a new budget
-   * 
+   *
    * Creates a budget in DRAFT status linked to a specific analytic account.
    * Budgets track planned amounts for income or expense categories.
-   * 
+   *
    * @param userId - ID of the user creating the budget
    * @param dto - Budget creation data
    * @returns Created budget with relations
-   * 
+   *
    * @example
    * create('user-123', {
    *   name: 'Marketing Q1',
@@ -79,16 +79,17 @@ export class BudgetsService {
 
   /**
    * Find all budgets with optional filters
-   * 
+   *
    * @param status - Optional filter by budget status
    * @param analyticAccountId - Optional filter by analytic account
    * @returns Array of budgets with relations, ordered by creation date desc
    */
-  async findAll(status?: string, analyticAccountId?: string) {
+  async findAll(status?: string, analyticAccountId?: string, userId?: string) {
     const budgets = await this.prisma.budget.findMany({
       where: {
-        status: status as any,
+        status: status as BudgetStatus,
         analyticAccountId: analyticAccountId || undefined,
+        createdBy: userId || undefined,
       },
       include: {
         analyticAccount: true,
@@ -108,7 +109,7 @@ export class BudgetsService {
 
   /**
    * Find a single budget by ID
-   * 
+   *
    * @param id - Budget ID
    * @returns Budget with all relations including revision chain
    * @throws NotFoundException if budget doesn't exist
@@ -135,10 +136,10 @@ export class BudgetsService {
 
   /**
    * Approve a draft budget
-   * 
+   *
    * Changes status from DRAFT to CONFIRMED.
    * Confirmed budgets cannot be edited directly - use createRevision instead.
-   * 
+   *
    * @param id - Budget ID to approve
    * @returns Updated budget with CONFIRMED status
    */
@@ -151,10 +152,10 @@ export class BudgetsService {
 
   /**
    * Update an existing draft budget
-   * 
+   *
    * Only DRAFT budgets can be updated. For CONFIRMED budgets,
    * use the createRevision method instead.
-   * 
+   *
    * @param id - Budget ID to update
    * @param dto - Updated budget data
    * @returns Updated budget with relations
@@ -194,14 +195,14 @@ export class BudgetsService {
 
   /**
    * Create a revision of a confirmed budget
-   * 
+   *
    * This method:
    * 1. Creates a new budget in DRAFT status linked to the original
    * 2. Marks the original budget as REVISED (read-only)
-   * 
+   *
    * Only CONFIRMED budgets can be revised. DRAFT budgets should
    * be edited directly using the update method.
-   * 
+   *
    * @param id - ID of the budget to revise (must be CONFIRMED)
    * @param userId - ID of the user creating the revision
    * @param dto - New budget data for the revision

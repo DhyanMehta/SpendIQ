@@ -16,6 +16,7 @@ import { ProductQueryDto } from "./dto/product-query.dto";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Role } from "@prisma/client";
 
 @Controller("products")
@@ -25,14 +26,14 @@ export class ProductsController {
 
   @Post()
   @Roles(Role.ADMIN)
-  create(@Body() createProductDto: CreateProductDto) {
-    return this.productsService.create(createProductDto);
+  create(@Body() createProductDto: CreateProductDto, @CurrentUser() user: any) {
+    return this.productsService.create(createProductDto, user.id);
   }
 
   @Get()
   @Roles(Role.ADMIN)
-  findAll(@Query() query: ProductQueryDto) {
-    return this.productsService.findAll(query);
+  findAll(@Query() query: ProductQueryDto, @CurrentUser() user: any) {
+    return this.productsService.findAll(query, user.id);
   }
 
   @Get("categories")

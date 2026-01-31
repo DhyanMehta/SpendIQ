@@ -16,6 +16,7 @@ import { ContactQueryDto } from "./dto/contact-query.dto";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 import { RolesGuard } from "../../common/guards/roles.guard";
 import { Roles } from "../../common/decorators/roles.decorator";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
 import { Role } from "@prisma/client";
 
 @Controller("contacts")
@@ -25,14 +26,14 @@ export class ContactsController {
 
   @Post()
   @Roles(Role.ADMIN)
-  create(@Body() createContactDto: CreateContactDto) {
-    return this.contactsService.create(createContactDto);
+  create(@Body() createContactDto: CreateContactDto, @CurrentUser() user: any) {
+    return this.contactsService.create(createContactDto, user.id);
   }
 
   @Get()
   @Roles(Role.ADMIN)
-  findAll(@Query() query: ContactQueryDto) {
-    return this.contactsService.findAll(query);
+  findAll(@Query() query: ContactQueryDto, @CurrentUser() user: any) {
+    return this.contactsService.findAll(query, user.id);
   }
 
   @Get(":id")

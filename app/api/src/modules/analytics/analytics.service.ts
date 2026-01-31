@@ -5,23 +5,11 @@ import {
   BudgetTypeFilter,
   StatusFilter,
 } from "./dto/analytics-filters.dto";
-
-// Local enum until Prisma regenerates
-enum BudgetStatus {
-  DRAFT = "DRAFT",
-  CONFIRMED = "CONFIRMED",
-  REVISED = "REVISED",
-  ARCHIVED = "ARCHIVED",
-}
-
-enum BudgetType {
-  INCOME = "INCOME",
-  EXPENSE = "EXPENSE",
-}
+import { BudgetStatus, BudgetType } from "@prisma/client";
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   /**
    * Get aggregate KPIs across all analytic accounts
@@ -170,10 +158,10 @@ export class AnalyticsService {
     // Fetch posted invoice lines for this analytic account
     const invoiceLines = await this.prisma.invoiceLine.findMany({
       where: {
-        analyticalAccountId: analyticId,
+        analyticAccountId: analyticId,
         invoice: {
           status: "POSTED",
-          invoiceDate: {
+          date: {
             gte: new Date(startDate),
             lte: new Date(endDate),
           },
@@ -195,7 +183,7 @@ export class AnalyticsService {
 
     return invoiceLines.map((line) => ({
       id: line.id,
-      invoiceNumber: line.invoice.invoiceNumber,
+      invoiceNumber: line.invoice.number,
       date: line.invoice.date.toISOString(),
       partnerName: line.invoice.partner.name,
       amount: Number(line.subtotal),
@@ -215,7 +203,7 @@ export class AnalyticsService {
 
     const result = await this.prisma.invoiceLine.aggregate({
       where: {
-        analyticalAccountId: { in: analyticAccountIds },
+        analyticAccountId: { in: analyticAccountIds },
         invoice: {
           date: {
             gte: startDate,

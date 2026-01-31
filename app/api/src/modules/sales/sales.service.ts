@@ -11,7 +11,7 @@ import { UpdateSalesOrderDto } from "./dto/update-sales-order.dto";
 export class SalesService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createDto: CreateSalesOrderDto) {
+  async create(createDto: CreateSalesOrderDto, userId?: string) {
     // Verify customer exists and is type CUSTOMER
     const customer = await this.prisma.contact.findUnique({
       where: { id: createDto.customerId },
@@ -26,7 +26,7 @@ export class SalesService {
     }
 
     // Generate SO reference
-    const count = await (this.prisma as any).salesOrder.count();
+    const count = await this.prisma.salesOrder.count();
     const reference = `SO${String(count + 1).padStart(6, "0")}`;
 
     // Calculate totals
@@ -35,10 +35,11 @@ export class SalesService {
       0,
     );
 
-    const salesOrder = await (this.prisma as any).salesOrder.create({
+    const salesOrder = await this.prisma.salesOrder.create({
       data: {
+        creator: userId ? { connect: { id: userId } } : undefined,
         reference,
-        customerId: createDto.customerId,
+        customer: { connect: { id: createDto.customerId } },
         date: createDto.date,
         status: "DRAFT",
         totalAmount: subtotal,
@@ -71,8 +72,9 @@ export class SalesService {
     search?: string;
     status?: string;
     customerId?: string;
+    userId?: string;
   }) {
-    const { page, limit, search, status, customerId } = filters;
+    const { page, limit, search, status, customerId, userId } = filters;
     const skip = (page - 1) * limit;
 
     const where: any = {};
@@ -92,8 +94,12 @@ export class SalesService {
       where.customerId = customerId;
     }
 
+    if (userId) {
+      where.createdById = userId;
+    }
+
     const [salesOrders, total] = await Promise.all([
-      (this.prisma as any).salesOrder.findMany({
+      this.prisma.salesOrder.findMany({
         where,
         skip,
         take: limit,
@@ -109,7 +115,7 @@ export class SalesService {
           createdAt: "desc",
         },
       }),
-      (this.prisma as any).salesOrder.count({ where }),
+      this.prisma.salesOrder.count({ where }),
     ]);
 
     return {
@@ -124,7 +130,7 @@ export class SalesService {
   }
 
   async findOne(id: string) {
-    const salesOrder = await (this.prisma as any).salesOrder.findUnique({
+    const salesOrder = await this.prisma.salesOrder.findUnique({
       where: { id },
       include: {
         customer: true,
@@ -145,7 +151,7 @@ export class SalesService {
   }
 
   async update(id: string, updateDto: UpdateSalesOrderDto) {
-    const existing = await (this.prisma as any).salesOrder.findUnique({
+    const existing = await this.prisma.salesOrder.findUnique({
       where: { id },
     });
 
@@ -170,12 +176,12 @@ export class SalesService {
       );
 
       // Delete existing lines and create new ones
-      await (this.prisma as any).salesOrderLine.deleteMany({
-        where: { salesOrderId: id },
+      await this.prisma.salesOrderLine.deleteMany({
+        where: { orderId: id },
       });
     }
 
-    const salesOrder = await (this.prisma as any).salesOrder.update({
+    const salesOrder = await this.prisma.salesOrder.update({
       where: { id },
       data: {
         customerId: updateDto.customerId,
@@ -207,7 +213,7 @@ export class SalesService {
   }
 
   async confirm(id: string) {
-    const existing = await (this.prisma as any).salesOrder.findUnique({
+    const existing = await this.prisma.salesOrder.findUnique({
       where: { id },
     });
 
@@ -219,7 +225,7 @@ export class SalesService {
       throw new BadRequestException("Only draft orders can be confirmed");
     }
 
-    return (this.prisma as any).salesOrder.update({
+    return this.prisma.salesOrder.update({
       where: { id },
       data: { status: "CONFIRMED" },
       include: {
@@ -234,7 +240,7 @@ export class SalesService {
   }
 
   async cancel(id: string) {
-    const existing = await (this.prisma as any).salesOrder.findUnique({
+    const existing = await this.prisma.salesOrder.findUnique({
       where: { id },
     });
 
@@ -242,7 +248,7 @@ export class SalesService {
       throw new NotFoundException("Sales Order not found");
     }
 
-    return (this.prisma as any).salesOrder.update({
+    return this.prisma.salesOrder.update({
       where: { id },
       data: { status: "CANCELLED" },
       include: {
@@ -253,7 +259,7 @@ export class SalesService {
   }
 
   async remove(id: string) {
-    const existing = await (this.prisma as any).salesOrder.findUnique({
+    const existing = await this.prisma.salesOrder.findUnique({
       where: { id },
     });
 
@@ -265,7 +271,7 @@ export class SalesService {
       throw new BadRequestException("Cannot delete confirmed Sales Order");
     }
 
-    await (this.prisma as any).salesOrder.delete({
+    await this.prisma.salesOrder.delete({
       where: { id },
     });
 

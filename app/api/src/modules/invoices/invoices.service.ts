@@ -10,6 +10,7 @@ import { JournalEntriesService } from "../accounting/services/journal-entries.se
 import { CreateInvoiceDto } from "./dto/create-invoice.dto";
 import { UpdateInvoiceDto } from "./dto/update-invoice.dto";
 import { SalesService } from "../sales/sales.service";
+import { Prisma, InvoiceType, InvoiceStatus } from "@prisma/client";
 
 @Injectable()
 export class InvoicesService {
@@ -23,9 +24,9 @@ export class InvoicesService {
     private readonly salesService: SalesService,
   ) {}
 
-  async create(createDto: CreateInvoiceDto) {
+  async create(createDto: CreateInvoiceDto, userId?: string) {
     // Generate Invoice Number
-    const count = await (this.prisma as any).invoice.count({
+    const count = await this.prisma.invoice.count({
       where: { type: createDto.type },
     });
     const prefix = createDto.type === "OUT_INVOICE" ? "INV" : "BILL";
@@ -37,23 +38,24 @@ export class InvoicesService {
       0,
     );
 
-    const invoice = await (this.prisma as any).invoice.create({
+    const invoice = await this.prisma.invoice.create({
       data: {
         number,
+        createdById: userId,
         partnerId: createDto.partnerId,
         date: createDto.date,
         dueDate: createDto.dueDate,
         type: createDto.type,
-        state: "DRAFT",
+        status: "DRAFT",
         paymentState: "NOT_PAID",
         totalAmount,
-        amountDue: totalAmount,
+        taxAmount: 0, // Default tax
         lines: {
           create: createDto.lines.map((line) => ({
             productId: line.productId,
-            description: line.description,
+            label: line.description, // Use definition from schema
             quantity: line.quantity,
-            unitPrice: line.unitPrice,
+            priceUnit: line.unitPrice, // Schema uses priceUnit
             subtotal: line.quantity * line.unitPrice,
             analyticAccountId: line.analyticalAccountId,
           })),
@@ -76,17 +78,19 @@ export class InvoicesService {
     type?: string;
     state?: string;
     partnerId?: string;
+    userId?: string;
   }) {
-    const { page, limit, type, state, partnerId } = filters;
+    const { page, limit, type, state, partnerId, userId } = filters;
     const skip = (page - 1) * limit;
 
-    const where: any = {};
-    if (type) where.type = type;
-    if (state) where.state = state;
+    const where: Prisma.InvoiceWhereInput = {};
+    if (type) where.type = type as InvoiceType;
+    if (state) where.status = state as InvoiceStatus;
     if (partnerId) where.partnerId = partnerId;
+    if (userId) where.createdById = userId;
 
     const [invoices, total] = await Promise.all([
-      (this.prisma as any).invoice.findMany({
+      this.prisma.invoice.findMany({
         where,
         skip,
         take: limit,
@@ -183,7 +187,7 @@ export class InvoicesService {
     return updated;
   }
 
-  async post(id: string) {
+  async post(id: string, userId?: string) {
     const invoice = await this.findOne(id);
 
     if (invoice.state !== "DRAFT") {
@@ -247,11 +251,14 @@ export class InvoicesService {
     let journalEntry;
     try {
       if (arAccount && incomeAccount) {
-        journalEntry = await this.journalEntriesService.create({
-          date: invoice.date,
-          reference: invoice.number,
-          lines,
-        });
+        journalEntry = await this.journalEntriesService.create(
+          {
+            date: invoice.date,
+            reference: invoice.number,
+            lines,
+          },
+          userId,
+        );
         await this.journalEntriesService.post(journalEntry.id);
       }
     } catch (e) {
@@ -261,10 +268,10 @@ export class InvoicesService {
     }
 
     // Update Invoice State
-    const updated = await (this.prisma as any).invoice.update({
+    const updated = await this.prisma.invoice.update({
       where: { id },
       data: {
-        state: "POSTED",
+        status: InvoiceStatus.POSTED,
         journalEntryId: journalEntry?.id,
       },
     });
