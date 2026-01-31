@@ -10,6 +10,7 @@ import { TransactionsModule } from "./modules/transactions/transactions.module";
 import { PortalModule } from "./modules/portal/portal.module";
 import { AccountingModule } from "./modules/accounting/accounting.module";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
+import { PurchaseOrdersModule } from "./modules/purchase/purchase-orders.module";
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { DashboardModule } from "./modules/dashboard/dashboard.module";
     PortalModule,
     AccountingModule,
     DashboardModule,
+    PurchaseOrdersModule,
   ],
   controllers: [],
   providers: [],

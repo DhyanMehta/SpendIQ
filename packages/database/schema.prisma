@@ -172,6 +172,7 @@ model AnalyticalAccount {
   invoiceLines InvoiceLine[]
   budgets     Budget[]
   defaultForProducts Product[] @relation("DefaultAnalytic")
+  poLines     PurchaseOrderLine[] @relation("POLineAnalytic")
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -273,13 +274,15 @@ model BudgetLine {
 
 model PurchaseOrder {
   id          String   @id @default(uuid())
-  reference   String   @unique // PO-2023-001
+  poNumber    String   @unique // PO-000001
   vendorId    String
   vendor      Contact  @relation(fields: [vendorId], references: [id])
   
-  date        DateTime
+  orderDate   DateTime
   status      PurchOrderStatus @default(DRAFT)
   
+  subtotal    Decimal  @db.Decimal(15, 2)
+  taxAmount   Decimal  @default(0) @db.Decimal(15, 2)
   totalAmount Decimal  @db.Decimal(15, 2)
   
   lines       PurchaseOrderLine[]
@@ -293,25 +296,26 @@ model PurchaseOrder {
 
 model PurchaseOrderLine {
   id          String   @id @default(uuid())
-  orderId     String
-  order       PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  purchaseOrderId String
+  purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
   
   productId   String
   product     Product  @relation(fields: [productId], references: [id])
   
+  description String
   quantity    Decimal  @db.Decimal(10, 2)
   unitPrice   Decimal  @db.Decimal(10, 2)
   subtotal    Decimal  @db.Decimal(15, 2)
+  
+  analyticalAccountId String?
+  analyticalAccount   AnalyticalAccount? @relation("POLineAnalytic", fields: [analyticalAccountId], references: [id])
 
   @@map("purchase_order_lines")
 }
 
 enum PurchOrderStatus {
   DRAFT
-  SENT
   CONFIRMED
-  RECEIVED
-  BILLED
   CANCELLED
 }
 
