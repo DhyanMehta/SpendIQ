@@ -12,6 +12,8 @@ import {
   HelpCircle,
   Menu,
   ChevronLeft,
+  ShoppingCart,
+  FileText,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -22,6 +24,8 @@ import { ThemeToggle } from "@/components/ui/theme-toggle";
 const sidebarItems = [
   { icon: LayoutDashboard, label: "Dashboard", href: "/dashboard" },
   { icon: Receipt, label: "Transactions", href: "/dashboard/transactions" },
+  { icon: ShoppingCart, label: "Sales", href: "/dashboard/sale/order" },
+  { icon: FileText, label: "Invoices", href: "/dashboard/sale/invoice" },
   { icon: Wallet, label: "Wallet", href: "/dashboard/budgets" },
   { icon: PieChart, label: "Analytics", href: "/dashboard/analytics" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
