@@ -9,12 +9,14 @@ import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
 import * as bcrypt from "bcrypt";
 import { Role } from "@prisma/client";
+import { MailService } from "../mail/mail.service";
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+    private mailService: MailService,
   ) {}
 
   async register(registerDto: RegisterDto) {
@@ -47,6 +49,13 @@ export class AuthService {
         role: Role.ADMIN, // Defaulting to ADMIN for MVP functionality
       },
     });
+
+    // Send welcome email (non-blocking)
+    this.mailService
+      .sendWelcomeEmail(user.email, user.name || "User")
+      .catch((error) => {
+        console.error("[AuthService] Failed to send welcome email:", error);
+      });
 
     // eslint-disable-next-line @typescript-eslint/no-unused-vars
     const { password, ...result } = user;
