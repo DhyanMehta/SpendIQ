@@ -10,35 +10,48 @@ export class MailService {
   constructor(private configService: ConfigService) {
     const mailHost = this.configService.get<string>("MAIL_HOST");
     const mailUser = this.configService.get<string>("MAIL_USER");
-    const mailPassword = this.configService.get<string>("MAIL_PASSWORD");
+    let mailPassword = this.configService.get<string>("MAIL_PASSWORD");
+
+    // Parse port as number explicitly to avoid string comparison issues
+    const mailPort =
+      Number(this.configService.get<number | string>("MAIL_PORT")) || 587;
+
+    // Remove spaces from app password if present (common copy-paste issue)
+    if (mailPassword) {
+      mailPassword = mailPassword.replace(/\s+/g, "");
+    }
 
     // Only create transporter if mail credentials are properly configured
     if (mailHost && mailUser && mailPassword) {
       this.transporter = nodemailer.createTransport({
         host: mailHost,
-        port: this.configService.get<number>("MAIL_PORT") || 587,
-        secure: this.configService.get<number>("MAIL_PORT") === 465,
+        port: mailPort,
+        secure: mailPort === 465, // true for 465, false for other ports
         auth: {
           user: mailUser,
           pass: mailPassword,
         },
-        connectionTimeout: 5000, // 5 seconds - fail fast
-        greetingTimeout: 5000,
-        socketTimeout: 5000,
+        connectionTimeout: 10000,
+        greetingTimeout: 10000,
+        socketTimeout: 10000,
       });
 
       // Verify connection on startup (non-blocking)
       this.transporter.verify((error) => {
         if (error) {
-          console.warn("[MailService] ⚠️ SMTP not available - emails will be logged to console only");
+          console.error("[MailService] ⚠️ SMTP Connection Failed:", error);
           this.isMailEnabled = false;
         } else {
-          console.log("[MailService] ✅ SMTP server is ready to send emails");
+          console.log(
+            `[MailService] ✅ SMTP connected to ${mailHost}:${mailPort} as ${mailUser}`,
+          );
           this.isMailEnabled = true;
         }
       });
     } else {
-      console.log("[MailService] 📧 Mail not configured - OTPs will be logged to console");
+      console.log(
+        "[MailService] 📧 Mail not configured - OTPs will be logged to console",
+      );
       this.isMailEnabled = false;
     }
   }
@@ -46,7 +59,9 @@ export class MailService {
   async sendWelcomeEmail(to: string, name: string) {
     // Skip sending email if SMTP is not available
     if (!this.isMailEnabled || !this.transporter) {
-      console.log(`[MailService] 📧 Welcome email skipped for ${to} (SMTP not available)`);
+      console.log(
+        `[MailService] 📧 Welcome email skipped for ${to} (SMTP not available)`,
+      );
       return { success: true, skipped: true };
     }
 
@@ -152,7 +167,9 @@ export class MailService {
 
     // Skip sending email if SMTP is not available
     if (!this.isMailEnabled || !this.transporter) {
-      console.log(`[MailService] 📧 Email sending skipped (SMTP not available) - use OTP logged above`);
+      console.log(
+        `[MailService] 📧 Email sending skipped (SMTP not available) - use OTP logged above`,
+      );
       return;
     }
 
@@ -178,7 +195,9 @@ export class MailService {
     } catch (error) {
       // Mark mail as disabled to skip future attempts this session
       this.isMailEnabled = false;
-      console.log(`[MailService] 📧 Email sending disabled for this session - use OTP logged above`);
+      console.log(
+        `[MailService] 📧 Email sending disabled for this session - use OTP logged above`,
+      );
     }
   }
 
@@ -193,7 +212,9 @@ export class MailService {
 
     // Skip sending email if SMTP is not available
     if (!this.isMailEnabled || !this.transporter) {
-      console.log(`[MailService] 📧 Portal invitation email skipped (SMTP not available) - credentials logged above`);
+      console.log(
+        `[MailService] 📧 Portal invitation email skipped (SMTP not available) - credentials logged above`,
+      );
       return;
     }
 
