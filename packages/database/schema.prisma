@@ -33,6 +33,8 @@ model User {
   createdInvoices       Invoice[]       @relation("InvoiceCreator")
   createdPayments       Payment[]       @relation("PaymentCreator")
   createdJournalEntries JournalEntry[]  @relation("JournalEntryCreator")
+  createdAnalyticalAccounts AnalyticalAccount[] @relation("AnalyticalAccountCreator")
+  createdAutoAnalyticalRules AutoAnalyticalRule[] @relation("AutoAnalyticalRuleCreator")
 
   contact        Contact?   @relation("PortalUser")
   
@@ -86,6 +88,7 @@ model Contact {
   invoices        Invoice[]
   payments        Payment[]
   journalEntries  JournalEntryLine[]
+  autoRules       AutoAnalyticalRule[]
   
   createdAt DateTime    @default(now())
   updatedAt DateTime    @updatedAt
@@ -111,6 +114,12 @@ enum Role {
   PORTAL_USER
 }
 
+enum AnalyticStatus {
+  DRAFT
+  CONFIRMED
+  ARCHIVED
+}
+
 
 model Product {
   id          String   @id @default(uuid())
@@ -131,6 +140,7 @@ model Product {
   invoiceLines InvoiceLine[]
   poLines      PurchaseOrderLine[]
   soLines      SalesOrderLine[]
+  autoRules    AutoAnalyticalRule[]
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -148,6 +158,7 @@ model Tag {
   name      String       @unique
   color     String?
   contacts  ContactTag[]
+  autoRules AutoAnalyticalRule[]
   createdAt DateTime     @default(now())
   updatedAt DateTime     @updatedAt
   
@@ -171,6 +182,7 @@ model ProductCategory {
   parent      ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
   children    ProductCategory[] @relation("CategoryHierarchy")
   products    Product[]
+  autoRules   AutoAnalyticalRule[]
 
   @@map("product_categories")
 }
@@ -179,6 +191,7 @@ model AnalyticalAccount {
   id          String   @id @default(uuid())
   code        String   @unique
   name        String
+  status      AnalyticStatus @default(DRAFT)
   parentId    String?
   parent      AnalyticalAccount?  @relation("AnalyticHierarchy", fields: [parentId], references: [id])
   children    AnalyticalAccount[] @relation("AnalyticHierarchy")
@@ -188,11 +201,16 @@ model AnalyticalAccount {
   budgets     Budget[]
   defaultForProducts Product[] @relation("DefaultAnalytic")
   poLines     PurchaseOrderLine[] @relation("POLineAnalytic")
+  autoRules   AutoAnalyticalRule[] @relation("RuleAnalytic")
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  createdById String?
+  creator     User?    @relation("AnalyticalAccountCreator", fields: [createdById], references: [id])
+
   @@index([code])
+  @@index([status])
   @@map("analytical_accounts")
 }
 
@@ -583,54 +601,49 @@ model JournalEntryLine {
 // AUTOMATION & AUDIT
 // ============================================================================
 
+
+
+
+
+
+
+
+
 model AutoAnalyticalRule {
   id          String   @id @default(uuid())
   name        String
+  status      AnalyticStatus @default(DRAFT)
+  
+  // Optional match conditions (ANY field can match)
+  partnerTagId      String?
+  partnerTag        Tag?     @relation(fields: [partnerTagId], references: [id])
+  
+  partnerId         String?
+  partner           Contact? @relation(fields: [partnerId], references: [id])
+  
+  productCategoryId String?
+  productCategory   ProductCategory? @relation(fields: [productCategoryId], references: [id])
+  
+  productId         String?
+  product           Product? @relation(fields: [productId], references: [id])
+  
+  // Required output
+  analyticalAccountId String
+  analyticalAccount   AnalyticalAccount @relation("RuleAnalytic", fields: [analyticalAccountId], references: [id])
+  
+  // Auto-calculated priority (number of fields matched)
   priority    Int      @default(0)
-  
-  // The target analytic account to apply
-  targetAccountId String
-  
-  conditions  RuleCondition[]
-  
-  active      Boolean  @default(true)
   
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
+  createdById String?
+  creator     User?    @relation("AutoAnalyticalRuleCreator", fields: [createdById], references: [id])
+
+  @@index([status])
+  @@index([priority])
   @@map("auto_analytical_rules")
 }
-
-model RuleCondition {
-  id          String   @id @default(uuid())
-  ruleId      String
-  rule        AutoAnalyticalRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
-  
-  field       RuleField // VENDOR, PRODUCT_CATEGORY, DESCRIPTION
-  operator    RuleOperator // CONTAINS, EQUALS
-  value       String
-  
-  @@map("rule_conditions")
-}
-
-enum RuleField {
-  VENDOR
-  PRODUCT_CATEGORY
-  DESCRIPTION
-  ACCOUNT
-}
-
-enum RuleOperator {
-  EQUALS
-  CONTAINS
-  STARTS_WITH
-}
-
-
-
-
-
-
 
 model AuditLog {
   id          String   @id @default(uuid())
