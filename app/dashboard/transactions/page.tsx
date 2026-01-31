@@ -92,7 +92,7 @@ export default function TransactionsPage() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead className="w-[100px]">Invoice ID</TableHead>
+              <TableHead className="w-[140px]">Invoice No.</TableHead>
               <TableHead>Date</TableHead>
               <TableHead>Recipient</TableHead>
               <TableHead className="hidden md:table-cell">
@@ -107,8 +107,8 @@ export default function TransactionsPage() {
           <TableBody>
             {filteredTransactions.map((t) => (
               <TableRow key={t.id}>
-                <TableCell className="font-medium text-xs font-mono text-muted-foreground">
-                  {t.id}
+                <TableCell className="font-medium text-sm">
+                  {t.number || `INV-${t.id.slice(0, 6).toUpperCase()}`}
                 </TableCell>
                 <TableCell>{t.date}</TableCell>
                 <TableCell className="font-semibold">{t.recipient}</TableCell>

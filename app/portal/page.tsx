@@ -85,7 +85,9 @@ export default function PortalDashboard() {
             <TableBody>
               {myInvoices.map((inv) => (
                 <TableRow key={inv.id}>
-                  <TableCell className="font-medium">{inv.id}</TableCell>
+                  <TableCell className="font-medium">
+                    {inv.number || `INV-${inv.id.slice(0, 6).toUpperCase()}`}
+                  </TableCell>
                   <TableCell>{inv.date}</TableCell>
                   <TableCell>{inv.dueDate}</TableCell>
                   <TableCell className="text-right">
