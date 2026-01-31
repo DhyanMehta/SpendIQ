@@ -18,8 +18,7 @@ const transactions_module_1 = require("./modules/transactions/transactions.modul
 const portal_module_1 = require("./modules/portal/portal.module");
 const accounting_module_1 = require("./modules/accounting/accounting.module");
 const dashboard_module_1 = require("./modules/dashboard/dashboard.module");
-const purchase_orders_module_1 = require("./modules/purchase/purchase-orders.module");
-const vendor_bills_module_1 = require("./modules/vendor-bills/vendor-bills.module");
+const purchase_module_1 = require("./modules/purchase/purchase.module");
 const payments_module_1 = require("./modules/payments/payments.module");
 const sales_module_1 = require("./modules/sales/sales.module");
 const invoices_module_1 = require("./modules/invoices/invoices.module");
@@ -40,8 +39,8 @@ exports.AppModule = AppModule = __decorate([
             portal_module_1.PortalModule,
             accounting_module_1.AccountingModule,
             dashboard_module_1.DashboardModule,
-            purchase_orders_module_1.PurchaseOrdersModule,
-            vendor_bills_module_1.VendorBillsModule,
+            dashboard_module_1.DashboardModule,
+            purchase_module_1.PurchaseModule,
             payments_module_1.PaymentsModule,
             sales_module_1.SalesModule,
             invoices_module_1.InvoicesModule,

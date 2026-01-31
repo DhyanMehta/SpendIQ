@@ -1,4 +1,4 @@
-declare class PurchaseOrderLineDto {
+declare class CreatePurchaseOrderLineDto {
     productId: string;
     description: string;
     quantity: number;
@@ -7,7 +7,7 @@ declare class PurchaseOrderLineDto {
 }
 export declare class CreatePurchaseOrderDto {
     vendorId: string;
-    orderDate: Date;
-    lines: PurchaseOrderLineDto[];
+    orderDate: string;
+    lines: CreatePurchaseOrderLineDto[];
 }
 export {};

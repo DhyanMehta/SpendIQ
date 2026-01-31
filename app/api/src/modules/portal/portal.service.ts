@@ -136,14 +136,19 @@ export class PortalService {
       return [];
     }
 
+    // Get OUT_INVOICE (Customer Invoices) - these are the ones customers need to pay
     const invoices = await this.prisma.invoice.findMany({
-      where: { partnerId: contactId },
+      where: { 
+        partnerId: contactId,
+        type: "OUT_INVOICE", // Only customer invoices
+      },
       include: {
         lines: {
           include: {
             product: true,
           },
         },
+        salesOrder: true, // Include linked sales order info
       },
       orderBy: { date: "desc" },
     });
@@ -158,6 +163,7 @@ export class PortalService {
       tax: Number(inv.taxAmount),
       status: inv.status,
       paymentState: inv.paymentState,
+      salesOrderRef: inv.salesOrder?.reference || null,
       lines: inv.lines.map((line) => ({
         id: line.id,
         product: line.product?.name,

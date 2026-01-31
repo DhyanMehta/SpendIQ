@@ -1,30 +1,182 @@
-import { PrismaService } from '../../common/database/prisma.service';
-import { CreatePurchaseOrderDto } from './dto/create-purchase-order.dto';
-import { UpdatePurchaseOrderDto } from './dto/update-purchase-order.dto';
+import { PrismaService } from "../../common/database/prisma.service";
+import { BudgetsService } from "../budgeting/services/budgets.service";
+import { CreatePurchaseOrderDto } from "./dto/create-purchase-order.dto";
+import { UpdatePurchaseOrderDto } from "./dto/update-purchase-order.dto";
 export declare class PurchaseOrdersService {
     private prisma;
-    constructor(prisma: PrismaService);
-    create(createDto: CreatePurchaseOrderDto): Promise<any>;
-    findAll(filters: {
-        page: number;
-        limit: number;
-        search?: string;
-        status?: string;
-        vendorId?: string;
-    }): Promise<{
-        data: any;
-        meta: {
-            total: any;
-            page: number;
-            limit: number;
-            totalPages: number;
+    private budgetsService;
+    constructor(prisma: PrismaService, budgetsService: BudgetsService);
+    create(userId: string, dto: CreatePurchaseOrderDto): Promise<{
+        lines: {
+            id: string;
+            purchaseOrderId: string;
+            subtotal: import("@prisma/client/runtime/library").Decimal;
+            quantity: import("@prisma/client/runtime/library").Decimal;
+            productId: string;
+            description: string;
+            unitPrice: import("@prisma/client/runtime/library").Decimal;
+            analyticalAccountId: string | null;
+        }[];
+        vendor: {
+            id: string;
+            name: string;
+            status: import(".prisma/client").$Enums.Status;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string;
+            type: import(".prisma/client").$Enums.ContactType;
+            createdById: string | null;
+            phone: string | null;
+            street: string | null;
+            city: string | null;
+            state: string | null;
+            country: string | null;
+            pincode: string | null;
+            imageUrl: string | null;
+            portalUserId: string | null;
+            isPortalUser: boolean;
         };
+    } & {
+        id: string;
+        status: import(".prisma/client").$Enums.PurchOrderStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        totalAmount: import("@prisma/client/runtime/library").Decimal;
+        taxAmount: import("@prisma/client/runtime/library").Decimal;
+        createdById: string | null;
+        poNumber: string;
+        vendorId: string;
+        orderDate: Date;
+        subtotal: import("@prisma/client/runtime/library").Decimal;
     }>;
-    findOne(id: string): Promise<any>;
-    update(id: string, updateDto: UpdatePurchaseOrderDto): Promise<any>;
-    confirm(id: string): Promise<any>;
-    cancel(id: string): Promise<any>;
+    findAll(): Promise<({
+        _count: {
+            lines: number;
+        };
+        vendor: {
+            name: string;
+        };
+    } & {
+        id: string;
+        status: import(".prisma/client").$Enums.PurchOrderStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        totalAmount: import("@prisma/client/runtime/library").Decimal;
+        taxAmount: import("@prisma/client/runtime/library").Decimal;
+        createdById: string | null;
+        poNumber: string;
+        vendorId: string;
+        orderDate: Date;
+        subtotal: import("@prisma/client/runtime/library").Decimal;
+    })[]>;
+    findOne(id: string): Promise<{
+        creator: {
+            name: string;
+        };
+        lines: ({
+            product: {
+                id: string;
+                name: string;
+                status: import(".prisma/client").$Enums.Status;
+                createdAt: Date;
+                updatedAt: Date;
+                createdById: string | null;
+                description: string | null;
+                salesPrice: import("@prisma/client/runtime/library").Decimal;
+                purchasePrice: import("@prisma/client/runtime/library").Decimal;
+                categoryId: string | null;
+                defaultAnalyticAccountId: string | null;
+            };
+            analyticalAccount: {
+                id: string;
+                name: string;
+                createdAt: Date;
+                updatedAt: Date;
+                code: string;
+                parentId: string | null;
+            };
+        } & {
+            id: string;
+            purchaseOrderId: string;
+            subtotal: import("@prisma/client/runtime/library").Decimal;
+            quantity: import("@prisma/client/runtime/library").Decimal;
+            productId: string;
+            description: string;
+            unitPrice: import("@prisma/client/runtime/library").Decimal;
+            analyticalAccountId: string | null;
+        })[];
+        vendor: {
+            id: string;
+            name: string;
+            status: import(".prisma/client").$Enums.Status;
+            createdAt: Date;
+            updatedAt: Date;
+            email: string;
+            type: import(".prisma/client").$Enums.ContactType;
+            createdById: string | null;
+            phone: string | null;
+            street: string | null;
+            city: string | null;
+            state: string | null;
+            country: string | null;
+            pincode: string | null;
+            imageUrl: string | null;
+            portalUserId: string | null;
+            isPortalUser: boolean;
+        };
+    } & {
+        id: string;
+        status: import(".prisma/client").$Enums.PurchOrderStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        totalAmount: import("@prisma/client/runtime/library").Decimal;
+        taxAmount: import("@prisma/client/runtime/library").Decimal;
+        createdById: string | null;
+        poNumber: string;
+        vendorId: string;
+        orderDate: Date;
+        subtotal: import("@prisma/client/runtime/library").Decimal;
+    }>;
+    update(id: string, dto: UpdatePurchaseOrderDto): Promise<{
+        id: string;
+        status: import(".prisma/client").$Enums.PurchOrderStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        totalAmount: import("@prisma/client/runtime/library").Decimal;
+        taxAmount: import("@prisma/client/runtime/library").Decimal;
+        createdById: string | null;
+        poNumber: string;
+        vendorId: string;
+        orderDate: Date;
+        subtotal: import("@prisma/client/runtime/library").Decimal;
+    }>;
+    confirm(id: string): Promise<{
+        po: {
+            id: string;
+            status: import(".prisma/client").$Enums.PurchOrderStatus;
+            createdAt: Date;
+            updatedAt: Date;
+            totalAmount: import("@prisma/client/runtime/library").Decimal;
+            taxAmount: import("@prisma/client/runtime/library").Decimal;
+            createdById: string | null;
+            poNumber: string;
+            vendorId: string;
+            orderDate: Date;
+            subtotal: import("@prisma/client/runtime/library").Decimal;
+        };
+        budgetWarnings: any[];
+    }>;
     remove(id: string): Promise<{
-        message: string;
+        id: string;
+        status: import(".prisma/client").$Enums.PurchOrderStatus;
+        createdAt: Date;
+        updatedAt: Date;
+        totalAmount: import("@prisma/client/runtime/library").Decimal;
+        taxAmount: import("@prisma/client/runtime/library").Decimal;
+        createdById: string | null;
+        poNumber: string;
+        vendorId: string;
+        orderDate: Date;
+        subtotal: import("@prisma/client/runtime/library").Decimal;
     }>;
 }

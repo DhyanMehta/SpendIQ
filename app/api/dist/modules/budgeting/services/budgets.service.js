@@ -148,6 +148,45 @@ let BudgetsService = class BudgetsService {
             return newBudget;
         });
     }
+    async checkBudgetAvailability(analyticAccountId, amount, date) {
+        const budget = await this.prisma.budget.findFirst({
+            where: {
+                analyticAccountId,
+                status: BudgetStatus.CONFIRMED,
+                startDate: { lte: date },
+                endDate: { gte: date },
+            },
+        });
+        if (!budget) {
+            return { available: true, remaining: 0, message: "No budget configured for this category" };
+        }
+        const actualSpent = await this.prisma.invoiceLine.aggregate({
+            where: {
+                analyticAccountId,
+                invoice: {
+                    status: "POSTED",
+                    date: {
+                        gte: budget.startDate,
+                        lte: budget.endDate,
+                    },
+                },
+            },
+            _sum: {
+                subtotal: true,
+            },
+        });
+        const spent = Number(actualSpent._sum.subtotal || 0);
+        const budgetedAmount = Number(budget.budgetedAmount);
+        const remaining = budgetedAmount - spent;
+        return {
+            available: remaining >= amount,
+            remaining,
+            budgetId: budget.id,
+            message: remaining >= amount
+                ? `Budget available: ₹${remaining.toFixed(2)} remaining`
+                : `Budget exceeded: Only ₹${remaining.toFixed(2)} available, requested ₹${amount.toFixed(2)}`,
+        };
+    }
 };
 exports.BudgetsService = BudgetsService;
 exports.BudgetsService = BudgetsService = __decorate([

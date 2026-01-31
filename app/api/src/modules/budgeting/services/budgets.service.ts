@@ -243,4 +243,65 @@ export class BudgetsService {
       return newBudget;
     });
   }
+
+  /**
+   * Check budget availability for a transaction
+   * 
+   * Checks if there is an active budget for the given analytic account
+   * and if the amount can be accommodated within the remaining budget.
+   * 
+   * @param analyticAccountId - ID of the analytic account
+   * @param amount - Amount to check against the budget
+   * @param date - Date of the transaction
+   * @returns Object containing whether budget is available and remaining amount
+   */
+  async checkBudgetAvailability(
+    analyticAccountId: string,
+    amount: number,
+    date: Date,
+  ): Promise<{ available: boolean; remaining: number; budgetId?: string; message?: string }> {
+    // Find active budget for the analytic account that covers the date
+    const budget = await this.prisma.budget.findFirst({
+      where: {
+        analyticAccountId,
+        status: BudgetStatus.CONFIRMED,
+        startDate: { lte: date },
+        endDate: { gte: date },
+      },
+    });
+
+    if (!budget) {
+      return { available: true, remaining: 0, message: "No budget configured for this category" };
+    }
+
+    // Calculate actual spent amount from posted invoices
+    const actualSpent = await this.prisma.invoiceLine.aggregate({
+      where: {
+        analyticAccountId,
+        invoice: {
+          status: "POSTED",
+          date: {
+            gte: budget.startDate,
+            lte: budget.endDate,
+          },
+        },
+      },
+      _sum: {
+        subtotal: true,
+      },
+    });
+
+    const spent = Number(actualSpent._sum.subtotal || 0);
+    const budgetedAmount = Number(budget.budgetedAmount);
+    const remaining = budgetedAmount - spent;
+
+    return {
+      available: remaining >= amount,
+      remaining,
+      budgetId: budget.id,
+      message: remaining >= amount 
+        ? `Budget available: ₹${remaining.toFixed(2)} remaining`
+        : `Budget exceeded: Only ₹${remaining.toFixed(2)} available, requested ₹${amount.toFixed(2)}`,
+    };
+  }
 }

@@ -18,33 +18,27 @@ const purchase_orders_service_1 = require("./purchase-orders.service");
 const create_purchase_order_dto_1 = require("./dto/create-purchase-order.dto");
 const update_purchase_order_dto_1 = require("./dto/update-purchase-order.dto");
 const jwt_auth_guard_1 = require("../../common/auth/jwt-auth.guard");
+const roles_guard_1 = require("../../common/guards/roles.guard");
+const roles_decorator_1 = require("../../common/decorators/roles.decorator");
+const client_1 = require("@prisma/client");
 let PurchaseOrdersController = class PurchaseOrdersController {
     constructor(purchaseOrdersService) {
         this.purchaseOrdersService = purchaseOrdersService;
     }
-    create(createDto) {
-        return this.purchaseOrdersService.create(createDto);
+    create(req, createPurchaseOrderDto) {
+        return this.purchaseOrdersService.create(req.user.id, createPurchaseOrderDto);
     }
-    findAll(page, limit, search, status, vendorId) {
-        return this.purchaseOrdersService.findAll({
-            page: page ? +page : 1,
-            limit: limit ? +limit : 10,
-            search,
-            status,
-            vendorId,
-        });
+    findAll() {
+        return this.purchaseOrdersService.findAll();
     }
     findOne(id) {
         return this.purchaseOrdersService.findOne(id);
     }
-    update(id, updateDto) {
-        return this.purchaseOrdersService.update(id, updateDto);
+    update(id, updatePurchaseOrderDto) {
+        return this.purchaseOrdersService.update(id, updatePurchaseOrderDto);
     }
     confirm(id) {
         return this.purchaseOrdersService.confirm(id);
-    }
-    cancel(id) {
-        return this.purchaseOrdersService.cancel(id);
     }
     remove(id) {
         return this.purchaseOrdersService.remove(id);
@@ -53,61 +47,56 @@ let PurchaseOrdersController = class PurchaseOrdersController {
 exports.PurchaseOrdersController = PurchaseOrdersController;
 __decorate([
     (0, common_1.Post)(),
-    __param(0, (0, common_1.Body)()),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Request)()),
+    __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_purchase_order_dto_1.CreatePurchaseOrderDto]),
+    __metadata("design:paramtypes", [Object, create_purchase_order_dto_1.CreatePurchaseOrderDto]),
     __metadata("design:returntype", void 0)
 ], PurchaseOrdersController.prototype, "create", null);
 __decorate([
     (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)('page')),
-    __param(1, (0, common_1.Query)('limit')),
-    __param(2, (0, common_1.Query)('search')),
-    __param(3, (0, common_1.Query)('status')),
-    __param(4, (0, common_1.Query)('vendorId')),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Number, Number, String, String, String]),
+    __metadata("design:paramtypes", []),
     __metadata("design:returntype", void 0)
 ], PurchaseOrdersController.prototype, "findAll", null);
 __decorate([
-    (0, common_1.Get)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    (0, common_1.Get)(":id"),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Param)("id")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], PurchaseOrdersController.prototype, "findOne", null);
 __decorate([
-    (0, common_1.Patch)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    (0, common_1.Patch)(":id"),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Param)("id")),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String, update_purchase_order_dto_1.UpdatePurchaseOrderDto]),
     __metadata("design:returntype", void 0)
 ], PurchaseOrdersController.prototype, "update", null);
 __decorate([
-    (0, common_1.Post)(':id/confirm'),
-    __param(0, (0, common_1.Param)('id')),
+    (0, common_1.Patch)(":id/confirm"),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Param)("id")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], PurchaseOrdersController.prototype, "confirm", null);
 __decorate([
-    (0, common_1.Post)(':id/cancel'),
-    __param(0, (0, common_1.Param)('id')),
-    __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
-    __metadata("design:returntype", void 0)
-], PurchaseOrdersController.prototype, "cancel", null);
-__decorate([
-    (0, common_1.Delete)(':id'),
-    __param(0, (0, common_1.Param)('id')),
+    (0, common_1.Delete)(":id"),
+    (0, roles_decorator_1.Roles)(client_1.Role.ADMIN),
+    __param(0, (0, common_1.Param)("id")),
     __metadata("design:type", Function),
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", void 0)
 ], PurchaseOrdersController.prototype, "remove", null);
 exports.PurchaseOrdersController = PurchaseOrdersController = __decorate([
-    (0, common_1.Controller)('purchase-orders'),
-    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
+    (0, common_1.Controller)("purchase/orders"),
+    (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard, roles_guard_1.RolesGuard),
     __metadata("design:paramtypes", [purchase_orders_service_1.PurchaseOrdersService])
 ], PurchaseOrdersController);
 //# sourceMappingURL=purchase-orders.controller.js.map

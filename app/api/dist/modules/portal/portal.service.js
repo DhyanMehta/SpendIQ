@@ -154,38 +154,46 @@ let PortalService = class PortalService {
             return [];
         }
         const invoices = await this.prisma.invoice.findMany({
-            where: { partnerId: contactId },
+            where: {
+                partnerId: contactId,
+                type: "OUT_INVOICE",
+            },
             include: {
                 lines: {
                     include: {
                         product: true,
                     },
                 },
+                salesOrder: true,
             },
             orderBy: { date: "desc" },
         });
-        return invoices.map((inv) => ({
-            id: inv.id,
-            number: inv.number,
-            type: inv.type,
-            date: inv.date,
-            dueDate: inv.dueDate,
-            total: Number(inv.totalAmount),
-            tax: Number(inv.taxAmount),
-            status: inv.status,
-            paymentState: inv.paymentState,
-            lines: inv.lines.map((line) => {
-                var _a;
-                return ({
-                    id: line.id,
-                    product: (_a = line.product) === null || _a === void 0 ? void 0 : _a.name,
-                    description: line.label,
-                    quantity: Number(line.quantity),
-                    unitPrice: Number(line.priceUnit),
-                    amount: Number(line.subtotal),
-                });
-            }),
-        }));
+        return invoices.map((inv) => {
+            var _a;
+            return ({
+                id: inv.id,
+                number: inv.number,
+                type: inv.type,
+                date: inv.date,
+                dueDate: inv.dueDate,
+                total: Number(inv.totalAmount),
+                tax: Number(inv.taxAmount),
+                status: inv.status,
+                paymentState: inv.paymentState,
+                salesOrderRef: ((_a = inv.salesOrder) === null || _a === void 0 ? void 0 : _a.reference) || null,
+                lines: inv.lines.map((line) => {
+                    var _a;
+                    return ({
+                        id: line.id,
+                        product: (_a = line.product) === null || _a === void 0 ? void 0 : _a.name,
+                        description: line.label,
+                        quantity: Number(line.quantity),
+                        unitPrice: Number(line.priceUnit),
+                        amount: Number(line.subtotal),
+                    });
+                }),
+            });
+        });
     }
     async getMyPurchaseOrders(userId) {
         const contactId = await this.getContactId(userId);

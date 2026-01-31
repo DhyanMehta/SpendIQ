@@ -24,7 +24,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
-import { CreditCard, Search, CheckCircle, Loader2 } from "lucide-react";
+import { CreditCard, Search, CheckCircle, Loader2, Eye } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { apiRequest } from "@/lib/api";
 
@@ -53,54 +53,9 @@ interface Invoice {
   tax: number;
   status: string;
   paymentState: string;
+  salesOrderRef?: string;
   lines: InvoiceLine[];
 }
-
-// Dummy data for testing Razorpay
-const DUMMY_INVOICES: Invoice[] = [
-  {
-    id: "dummy-1",
-    number: "INV/2025/00001",
-    type: "OUT_INVOICE",
-    date: "2025-04-17",
-    dueDate: "2025-04-17",
-    total: 749.0,
-    tax: 49.0,
-    status: "POSTED",
-    paymentState: "NOT_PAID",
-    lines: [
-      {
-        id: "line-1",
-        product: "Web Development Service",
-        description: "Monthly maintenance",
-        quantity: 1,
-        unitPrice: 700.0,
-        amount: 700.0,
-      },
-    ],
-  },
-  {
-    id: "dummy-2",
-    number: "INV/2025/00002",
-    type: "OUT_INVOICE",
-    date: "2025-04-15",
-    dueDate: "2025-04-20",
-    total: 1500.0,
-    tax: 150.0,
-    status: "POSTED",
-    paymentState: "PAID",
-    lines: [
-      {
-        id: "line-2",
-        product: "Consulting",
-        description: "Business consulting - 10 hours",
-        quantity: 10,
-        unitPrice: 135.0,
-        amount: 1350.0,
-      },
-    ],
-  },
-];
 
 export default function PortalInvoicesPage() {
   const [invoices, setInvoices] = useState<Invoice[]>([]);
@@ -128,16 +83,11 @@ export default function PortalInvoicesPage() {
   const fetchInvoices = async () => {
     try {
       const data = await apiRequest("/portal/invoices");
-      if (Array.isArray(data) && data.length > 0) {
+      if (Array.isArray(data)) {
         setInvoices(data);
-      } else {
-        // Use dummy data if no invoices from API
-        setInvoices(DUMMY_INVOICES);
       }
     } catch (e) {
       console.error("Failed to load invoices:", e);
-      // Use dummy data on error
-      setInvoices(DUMMY_INVOICES);
     } finally {
       setLoading(false);
     }
@@ -146,58 +96,6 @@ export default function PortalInvoicesPage() {
   const handlePay = async (invoice: Invoice) => {
     setPaying(true);
 
-    // Check if it's dummy data
-    if (invoice.id.startsWith("dummy-")) {
-      // For dummy data, create a test Razorpay order directly
-      try {
-        const options = {
-          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "rzp_test_yourkeyhere",
-          amount: Math.round(invoice.total * 100), // Convert to paise
-          currency: "INR",
-          name: "SpendIQ",
-          description: `Payment for Invoice ${invoice.number}`,
-          prefill: {
-            name: "Test User",
-            email: "test@example.com",
-            contact: "9999999999",
-          },
-          theme: {
-            color: "#667eea",
-          },
-          handler: function (response: any) {
-            setPaymentSuccess(
-              `Payment successful! Payment ID: ${response.razorpay_payment_id}`
-            );
-            // Update local state to mark as paid
-            setInvoices((prev) =>
-              prev.map((inv) =>
-                inv.id === invoice.id ? { ...inv, paymentState: "PAID" } : inv
-              )
-            );
-            setSelectedInvoice(null);
-            setPaying(false);
-          },
-          modal: {
-            ondismiss: function () {
-              setPaying(false);
-            },
-          },
-        };
-
-        const razorpay = new window.Razorpay(options);
-        razorpay.on("payment.failed", function (response: any) {
-          alert(`Payment failed: ${response.error.description}`);
-          setPaying(false);
-        });
-        razorpay.open();
-      } catch (e: any) {
-        alert(e.message || "Payment failed");
-        setPaying(false);
-      }
-      return;
-    }
-
-    // Real invoice - use API
     try {
       const orderData = await apiRequest(`/portal/invoices/${invoice.id}/pay`, {
         method: "POST",
@@ -299,9 +197,9 @@ export default function PortalInvoicesPage() {
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-3xl font-bold tracking-tight">Invoices</h1>
+        <h1 className="text-3xl font-bold tracking-tight">My Invoices</h1>
         <p className="text-muted-foreground mt-1">
-          Contact can only view own Invoice
+          View and pay your invoices via Razorpay
         </p>
       </div>
 
@@ -329,7 +227,7 @@ export default function PortalInvoicesPage() {
             <div>
               <CardTitle>All Invoices</CardTitle>
               <CardDescription>
-                {filteredInvoices.length} total invoice(s)
+                {filteredInvoices.length} invoice(s) found
               </CardDescription>
             </div>
             <div className="relative w-64">
@@ -345,49 +243,65 @@ export default function PortalInvoicesPage() {
         </CardHeader>
         <CardContent>
           {filteredInvoices.length === 0 ? (
-            <p className="text-muted-foreground text-center py-8">
-              No invoices found
-            </p>
+            <div className="text-center py-12">
+              <p className="text-muted-foreground">No invoices found</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                Your invoices will appear here once created by admin
+              </p>
+            </div>
           ) : (
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Invoice</TableHead>
+                  <TableHead>Invoice #</TableHead>
+                  <TableHead>Sales Order</TableHead>
                   <TableHead>Invoice Date</TableHead>
                   <TableHead>Due Date</TableHead>
                   <TableHead className="text-right">Amount</TableHead>
-                  <TableHead className="text-center">Status</TableHead>
+                  <TableHead className="text-center">Payment</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {filteredInvoices.map((inv) => (
                   <TableRow key={inv.id}>
-                    <TableCell className="font-medium text-primary">
-                      {inv.number}
+                    <TableCell className="font-medium">{inv.number}</TableCell>
+                    <TableCell>
+                      {inv.salesOrderRef || <span className="text-muted-foreground">-</span>}
                     </TableCell>
                     <TableCell>{formatDate(inv.date)}</TableCell>
                     <TableCell>{formatDate(inv.dueDate)}</TableCell>
-                    <TableCell className="text-right">
+                    <TableCell className="text-right font-medium">
                       {formatCurrency(inv.total)}
                     </TableCell>
                     <TableCell className="text-center">
                       {inv.paymentState === "PAID" ? (
-                        <Badge variant="default">Paid</Badge>
+                        <Badge variant="default" className="bg-green-600">Paid</Badge>
                       ) : (
                         <Button
                           size="sm"
-                          variant="ghost"
-                          className="text-primary hover:text-primary"
                           onClick={() => handlePay(inv)}
                           disabled={paying}
                         >
                           {paying ? (
                             <Loader2 className="h-4 w-4 animate-spin" />
                           ) : (
-                            "Pay Now"
+                            <>
+                              <CreditCard className="h-4 w-4 mr-1" />
+                              Pay Now
+                            </>
                           )}
                         </Button>
                       )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setSelectedInvoice(inv)}
+                      >
+                        <Eye className="h-4 w-4" />
+                      </Button>
                     </TableCell>
                   </TableRow>
                 ))}
@@ -410,7 +324,7 @@ export default function PortalInvoicesPage() {
             <div className="space-y-6">
               <div className="grid grid-cols-2 gap-4 text-sm">
                 <div>
-                  <p className="text-muted-foreground">Date</p>
+                  <p className="text-muted-foreground">Invoice Date</p>
                   <p className="font-medium">
                     {formatDate(selectedInvoice.date)}
                   </p>
@@ -422,21 +336,19 @@ export default function PortalInvoicesPage() {
                   </p>
                 </div>
                 <div>
-                  <p className="text-muted-foreground">Status</p>
+                  <p className="text-muted-foreground">Payment Status</p>
                   {selectedInvoice.paymentState === "PAID" ? (
-                    <Badge variant="default">Paid</Badge>
+                    <Badge variant="default" className="bg-green-600">Paid</Badge>
                   ) : (
                     <Badge variant="destructive">Not Paid</Badge>
                   )}
                 </div>
-                <div>
-                  <p className="text-muted-foreground">Type</p>
-                  <Badge variant="outline">
-                    {selectedInvoice.type === "IN_INVOICE"
-                      ? "Vendor Bill"
-                      : "Customer Invoice"}
-                  </Badge>
-                </div>
+                {selectedInvoice.salesOrderRef && (
+                  <div>
+                    <p className="text-muted-foreground">Sales Order</p>
+                    <p className="font-medium">{selectedInvoice.salesOrderRef}</p>
+                  </div>
+                )}
               </div>
 
               <div>

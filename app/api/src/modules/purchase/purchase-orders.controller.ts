@@ -12,9 +12,9 @@ import {
 import { PurchaseOrdersService } from "./purchase-orders.service";
 import { CreatePurchaseOrderDto } from "./dto/create-purchase-order.dto";
 import { UpdatePurchaseOrderDto } from "./dto/update-purchase-order.dto";
-import { JwtAuthGuard } from "../../../common/auth/jwt-auth.guard";
-import { RolesGuard } from "../../../common/guards/roles.guard";
-import { Roles } from "../../../common/decorators/roles.decorator";
+import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
+import { RolesGuard } from "../../common/guards/roles.guard";
+import { Roles } from "../../common/decorators/roles.decorator";
 import { Role } from "@prisma/client";
 
 @Controller("purchase/orders")

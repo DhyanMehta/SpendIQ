@@ -47,6 +47,7 @@ export declare class PortalController {
         tax: number;
         status: import(".prisma/client").$Enums.InvoiceStatus;
         paymentState: import(".prisma/client").$Enums.PaymentState;
+        salesOrderRef: string;
         lines: {
             id: string;
             product: string;

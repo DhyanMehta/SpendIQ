@@ -3,8 +3,8 @@ import {
   NotFoundException,
   BadRequestException,
 } from "@nestjs/common";
-import { PrismaService } from "../../../common/database/prisma.service";
-import { BudgetsService } from "../../budgeting/services/budgets.service";
+import { PrismaService } from "../../common/database/prisma.service";
+import { BudgetsService } from "../budgeting/services/budgets.service";
 import { CreatePurchaseOrderDto } from "./dto/create-purchase-order.dto";
 import { UpdatePurchaseOrderDto } from "./dto/update-purchase-order.dto";
 import { PurchOrderStatus } from "@prisma/client";
@@ -122,13 +122,13 @@ export class PurchaseOrdersService {
           Number(line.subtotal),
           po.orderDate,
         );
-        if (check.isExceeded) {
+        if (!check.available) {
           warnings.push({
             lineId: line.id,
             analytic: line.analyticalAccount?.name,
-            message: `Exceeds budget '${check.budgetName || "N/A"}'. Available: ${check.available < 0 ? 0 : check.available}`,
+            message: check.message || `Budget exceeded. Available: ₹${check.remaining < 0 ? 0 : check.remaining}`,
           });
-        } else if (!check.hasBudget) {
+        } else if (!check.budgetId) {
           warnings.push({
             lineId: line.id,
             analytic: line.analyticalAccount?.name,

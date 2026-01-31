@@ -4,7 +4,7 @@ import {
   BadRequestException,
 } from "@nestjs/common";
 import { PrismaService } from "../../common/database/prisma.service";
-import { BudgetsService } from "../../budgeting/services/budgets.service";
+import { BudgetsService } from "../budgeting/services/budgets.service";
 import { CreateVendorBillDto } from "./dto/create-vendor-bill.dto";
 import { InvoiceType, InvoiceStatus } from "@prisma/client";
 
@@ -121,11 +121,11 @@ export class VendorBillsService {
           Number(line.subtotal),
           bill.date,
         );
-        if (check.isExceeded) {
+        if (!check.available) {
           warnings.push({
             lineId: line.id,
             analytic: line.analyticAccount?.name,
-            message: `Exceeds budget '${check.budgetName || "N/A"}'. Available: ${check.available < 0 ? 0 : check.available}`,
+            message: check.message || `Budget exceeded. Available: ₹${check.remaining < 0 ? 0 : check.remaining}`,
           });
         }
       }
@@ -155,11 +155,11 @@ export class VendorBillsService {
           Number(line.subtotal),
           bill.date,
         );
-        if (check.isExceeded) {
+        if (!check.available) {
           warnings.push({
             lineId: line.id,
             analytic: line.analyticAccount?.name,
-            message: `Exceeds budget '${check.budgetName || "N/A"}'. Available: ${check.available < 0 ? 0 : check.available}`,
+            message: check.message || `Budget exceeded. Available: ₹${check.remaining < 0 ? 0 : check.remaining}`,
           });
         }
       }
