@@ -48,8 +48,8 @@ let SalesController = class SalesController {
     confirm(id) {
         return this.salesService.confirm(id);
     }
-    createInvoice(id) {
-        return { message: "Invoice creation logic to be linked" };
+    createInvoice(id, user) {
+        return this.salesService.createInvoice(id, user.id);
     }
 };
 exports.SalesController = SalesController;
@@ -101,8 +101,9 @@ __decorate([
 __decorate([
     (0, common_1.Post)(":id/create-invoice"),
     __param(0, (0, common_1.Param)("id")),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], SalesController.prototype, "createInvoice", null);
 exports.SalesController = SalesController = __decorate([

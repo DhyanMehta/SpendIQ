@@ -20,7 +20,7 @@ import { Role } from "@prisma/client";
 @Controller("purchase/orders")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PurchaseOrdersController {
-  constructor(private readonly purchaseOrdersService: PurchaseOrdersService) {}
+  constructor(private readonly purchaseOrdersService: PurchaseOrdersService) { }
 
   @Post()
   @Roles(Role.ADMIN)

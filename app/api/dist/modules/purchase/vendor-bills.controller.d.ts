@@ -8,13 +8,13 @@ export declare class VendorBillsController {
     }): Promise<{
         partner: {
             id: string;
-            name: string;
+            type: import(".prisma/client").$Enums.ContactType;
             status: import(".prisma/client").$Enums.Status;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
-            type: import(".prisma/client").$Enums.ContactType;
             createdById: string | null;
+            name: string;
+            email: string;
             phone: string | null;
             street: string | null;
             city: string | null;
@@ -26,54 +26,54 @@ export declare class VendorBillsController {
             isPortalUser: boolean;
         };
         lines: ({
-            analyticAccount: {
-                id: string;
-                name: string;
-                createdAt: Date;
-                updatedAt: Date;
-                code: string;
-                parentId: string | null;
-            };
             product: {
                 id: string;
-                name: string;
                 status: import(".prisma/client").$Enums.Status;
                 createdAt: Date;
                 updatedAt: Date;
                 createdById: string | null;
+                name: string;
                 description: string | null;
                 salesPrice: import("@prisma/client/runtime/library").Decimal;
                 purchasePrice: import("@prisma/client/runtime/library").Decimal;
                 categoryId: string | null;
                 defaultAnalyticAccountId: string | null;
             };
+            analyticAccount: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                name: string;
+                code: string;
+                parentId: string | null;
+            };
         } & {
             id: string;
-            analyticAccountId: string | null;
             subtotal: import("@prisma/client/runtime/library").Decimal;
-            quantity: import("@prisma/client/runtime/library").Decimal;
-            priceUnit: import("@prisma/client/runtime/library").Decimal;
-            taxRate: import("@prisma/client/runtime/library").Decimal;
             invoiceId: string;
             productId: string | null;
             label: string;
+            quantity: import("@prisma/client/runtime/library").Decimal;
+            priceUnit: import("@prisma/client/runtime/library").Decimal;
+            taxRate: import("@prisma/client/runtime/library").Decimal;
+            analyticAccountId: string | null;
         })[];
     } & {
         number: string;
         id: string;
-        status: import(".prisma/client").$Enums.InvoiceStatus;
-        createdAt: Date;
-        updatedAt: Date;
         type: import(".prisma/client").$Enums.InvoiceType;
         partnerId: string;
         date: Date;
         dueDate: Date;
+        status: import(".prisma/client").$Enums.InvoiceStatus;
         paymentState: import(".prisma/client").$Enums.PaymentState;
         totalAmount: import("@prisma/client/runtime/library").Decimal;
         taxAmount: import("@prisma/client/runtime/library").Decimal;
         salesOrderId: string | null;
         purchaseOrderId: string | null;
         journalEntryId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         createdById: string | null;
     }>;
     findAll(user: {
@@ -81,13 +81,13 @@ export declare class VendorBillsController {
     }): Promise<({
         partner: {
             id: string;
-            name: string;
+            type: import(".prisma/client").$Enums.ContactType;
             status: import(".prisma/client").$Enums.Status;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
-            type: import(".prisma/client").$Enums.ContactType;
             createdById: string | null;
+            name: string;
+            email: string;
             phone: string | null;
             street: string | null;
             city: string | null;
@@ -100,31 +100,31 @@ export declare class VendorBillsController {
         };
         lines: {
             id: string;
-            analyticAccountId: string | null;
             subtotal: import("@prisma/client/runtime/library").Decimal;
-            quantity: import("@prisma/client/runtime/library").Decimal;
-            priceUnit: import("@prisma/client/runtime/library").Decimal;
-            taxRate: import("@prisma/client/runtime/library").Decimal;
             invoiceId: string;
             productId: string | null;
             label: string;
+            quantity: import("@prisma/client/runtime/library").Decimal;
+            priceUnit: import("@prisma/client/runtime/library").Decimal;
+            taxRate: import("@prisma/client/runtime/library").Decimal;
+            analyticAccountId: string | null;
         }[];
     } & {
         number: string;
         id: string;
-        status: import(".prisma/client").$Enums.InvoiceStatus;
-        createdAt: Date;
-        updatedAt: Date;
         type: import(".prisma/client").$Enums.InvoiceType;
         partnerId: string;
         date: Date;
         dueDate: Date;
+        status: import(".prisma/client").$Enums.InvoiceStatus;
         paymentState: import(".prisma/client").$Enums.PaymentState;
         totalAmount: import("@prisma/client/runtime/library").Decimal;
         taxAmount: import("@prisma/client/runtime/library").Decimal;
         salesOrderId: string | null;
         purchaseOrderId: string | null;
         journalEntryId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         createdById: string | null;
     })[]>;
     findOne(id: string, user: {
@@ -132,13 +132,13 @@ export declare class VendorBillsController {
     }): Promise<{
         partner: {
             id: string;
-            name: string;
+            type: import(".prisma/client").$Enums.ContactType;
             status: import(".prisma/client").$Enums.Status;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
-            type: import(".prisma/client").$Enums.ContactType;
             createdById: string | null;
+            name: string;
+            email: string;
             phone: string | null;
             street: string | null;
             city: string | null;
@@ -150,54 +150,54 @@ export declare class VendorBillsController {
             isPortalUser: boolean;
         };
         lines: ({
-            analyticAccount: {
-                id: string;
-                name: string;
-                createdAt: Date;
-                updatedAt: Date;
-                code: string;
-                parentId: string | null;
-            };
             product: {
                 id: string;
-                name: string;
                 status: import(".prisma/client").$Enums.Status;
                 createdAt: Date;
                 updatedAt: Date;
                 createdById: string | null;
+                name: string;
                 description: string | null;
                 salesPrice: import("@prisma/client/runtime/library").Decimal;
                 purchasePrice: import("@prisma/client/runtime/library").Decimal;
                 categoryId: string | null;
                 defaultAnalyticAccountId: string | null;
             };
+            analyticAccount: {
+                id: string;
+                createdAt: Date;
+                updatedAt: Date;
+                name: string;
+                code: string;
+                parentId: string | null;
+            };
         } & {
             id: string;
-            analyticAccountId: string | null;
             subtotal: import("@prisma/client/runtime/library").Decimal;
-            quantity: import("@prisma/client/runtime/library").Decimal;
-            priceUnit: import("@prisma/client/runtime/library").Decimal;
-            taxRate: import("@prisma/client/runtime/library").Decimal;
             invoiceId: string;
             productId: string | null;
             label: string;
+            quantity: import("@prisma/client/runtime/library").Decimal;
+            priceUnit: import("@prisma/client/runtime/library").Decimal;
+            taxRate: import("@prisma/client/runtime/library").Decimal;
+            analyticAccountId: string | null;
         })[];
     } & {
         number: string;
         id: string;
-        status: import(".prisma/client").$Enums.InvoiceStatus;
-        createdAt: Date;
-        updatedAt: Date;
         type: import(".prisma/client").$Enums.InvoiceType;
         partnerId: string;
         date: Date;
         dueDate: Date;
+        status: import(".prisma/client").$Enums.InvoiceStatus;
         paymentState: import(".prisma/client").$Enums.PaymentState;
         totalAmount: import("@prisma/client/runtime/library").Decimal;
         taxAmount: import("@prisma/client/runtime/library").Decimal;
         salesOrderId: string | null;
         purchaseOrderId: string | null;
         journalEntryId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
         createdById: string | null;
     }>;
     postBill(id: string, user: {
@@ -206,19 +206,19 @@ export declare class VendorBillsController {
         bill: {
             number: string;
             id: string;
-            status: import(".prisma/client").$Enums.InvoiceStatus;
-            createdAt: Date;
-            updatedAt: Date;
             type: import(".prisma/client").$Enums.InvoiceType;
             partnerId: string;
             date: Date;
             dueDate: Date;
+            status: import(".prisma/client").$Enums.InvoiceStatus;
             paymentState: import(".prisma/client").$Enums.PaymentState;
             totalAmount: import("@prisma/client/runtime/library").Decimal;
             taxAmount: import("@prisma/client/runtime/library").Decimal;
             salesOrderId: string | null;
             purchaseOrderId: string | null;
             journalEntryId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
             createdById: string | null;
         };
         budgetWarnings: any[];

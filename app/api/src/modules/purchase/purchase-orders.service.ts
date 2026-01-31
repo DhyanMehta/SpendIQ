@@ -14,7 +14,7 @@ export class PurchaseOrdersService {
   constructor(
     private prisma: PrismaService,
     private budgetsService: BudgetsService,
-  ) {}
+  ) { }
 
   async create(userId: string, dto: CreatePurchaseOrderDto) {
     // Calculate totals

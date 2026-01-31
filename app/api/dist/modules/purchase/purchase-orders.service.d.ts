@@ -11,21 +11,21 @@ export declare class PurchaseOrdersService {
             id: string;
             purchaseOrderId: string;
             subtotal: import("@prisma/client/runtime/library").Decimal;
-            quantity: import("@prisma/client/runtime/library").Decimal;
             productId: string;
+            quantity: import("@prisma/client/runtime/library").Decimal;
             description: string;
             unitPrice: import("@prisma/client/runtime/library").Decimal;
             analyticalAccountId: string | null;
         }[];
         vendor: {
             id: string;
-            name: string;
+            type: import(".prisma/client").$Enums.ContactType;
             status: import(".prisma/client").$Enums.Status;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
-            type: import(".prisma/client").$Enums.ContactType;
             createdById: string | null;
+            name: string;
+            email: string;
             phone: string | null;
             street: string | null;
             city: string | null;
@@ -39,10 +39,10 @@ export declare class PurchaseOrdersService {
     } & {
         id: string;
         status: import(".prisma/client").$Enums.PurchOrderStatus;
-        createdAt: Date;
-        updatedAt: Date;
         totalAmount: import("@prisma/client/runtime/library").Decimal;
         taxAmount: import("@prisma/client/runtime/library").Decimal;
+        createdAt: Date;
+        updatedAt: Date;
         createdById: string | null;
         poNumber: string;
         vendorId: string;
@@ -59,10 +59,10 @@ export declare class PurchaseOrdersService {
     } & {
         id: string;
         status: import(".prisma/client").$Enums.PurchOrderStatus;
-        createdAt: Date;
-        updatedAt: Date;
         totalAmount: import("@prisma/client/runtime/library").Decimal;
         taxAmount: import("@prisma/client/runtime/library").Decimal;
+        createdAt: Date;
+        updatedAt: Date;
         createdById: string | null;
         poNumber: string;
         vendorId: string;
@@ -70,17 +70,14 @@ export declare class PurchaseOrdersService {
         subtotal: import("@prisma/client/runtime/library").Decimal;
     })[]>;
     findOne(id: string): Promise<{
-        creator: {
-            name: string;
-        };
         lines: ({
             product: {
                 id: string;
-                name: string;
                 status: import(".prisma/client").$Enums.Status;
                 createdAt: Date;
                 updatedAt: Date;
                 createdById: string | null;
+                name: string;
                 description: string | null;
                 salesPrice: import("@prisma/client/runtime/library").Decimal;
                 purchasePrice: import("@prisma/client/runtime/library").Decimal;
@@ -89,9 +86,9 @@ export declare class PurchaseOrdersService {
             };
             analyticalAccount: {
                 id: string;
-                name: string;
                 createdAt: Date;
                 updatedAt: Date;
+                name: string;
                 code: string;
                 parentId: string | null;
             };
@@ -99,21 +96,24 @@ export declare class PurchaseOrdersService {
             id: string;
             purchaseOrderId: string;
             subtotal: import("@prisma/client/runtime/library").Decimal;
-            quantity: import("@prisma/client/runtime/library").Decimal;
             productId: string;
+            quantity: import("@prisma/client/runtime/library").Decimal;
             description: string;
             unitPrice: import("@prisma/client/runtime/library").Decimal;
             analyticalAccountId: string | null;
         })[];
+        creator: {
+            name: string;
+        };
         vendor: {
             id: string;
-            name: string;
+            type: import(".prisma/client").$Enums.ContactType;
             status: import(".prisma/client").$Enums.Status;
             createdAt: Date;
             updatedAt: Date;
-            email: string;
-            type: import(".prisma/client").$Enums.ContactType;
             createdById: string | null;
+            name: string;
+            email: string;
             phone: string | null;
             street: string | null;
             city: string | null;
@@ -127,10 +127,10 @@ export declare class PurchaseOrdersService {
     } & {
         id: string;
         status: import(".prisma/client").$Enums.PurchOrderStatus;
-        createdAt: Date;
-        updatedAt: Date;
         totalAmount: import("@prisma/client/runtime/library").Decimal;
         taxAmount: import("@prisma/client/runtime/library").Decimal;
+        createdAt: Date;
+        updatedAt: Date;
         createdById: string | null;
         poNumber: string;
         vendorId: string;
@@ -140,10 +140,10 @@ export declare class PurchaseOrdersService {
     update(id: string, dto: UpdatePurchaseOrderDto): Promise<{
         id: string;
         status: import(".prisma/client").$Enums.PurchOrderStatus;
-        createdAt: Date;
-        updatedAt: Date;
         totalAmount: import("@prisma/client/runtime/library").Decimal;
         taxAmount: import("@prisma/client/runtime/library").Decimal;
+        createdAt: Date;
+        updatedAt: Date;
         createdById: string | null;
         poNumber: string;
         vendorId: string;
@@ -154,10 +154,10 @@ export declare class PurchaseOrdersService {
         po: {
             id: string;
             status: import(".prisma/client").$Enums.PurchOrderStatus;
-            createdAt: Date;
-            updatedAt: Date;
             totalAmount: import("@prisma/client/runtime/library").Decimal;
             taxAmount: import("@prisma/client/runtime/library").Decimal;
+            createdAt: Date;
+            updatedAt: Date;
             createdById: string | null;
             poNumber: string;
             vendorId: string;
@@ -166,13 +166,26 @@ export declare class PurchaseOrdersService {
         };
         budgetWarnings: any[];
     }>;
+    cancel(id: string): Promise<{
+        id: string;
+        status: import(".prisma/client").$Enums.PurchOrderStatus;
+        totalAmount: import("@prisma/client/runtime/library").Decimal;
+        taxAmount: import("@prisma/client/runtime/library").Decimal;
+        createdAt: Date;
+        updatedAt: Date;
+        createdById: string | null;
+        poNumber: string;
+        vendorId: string;
+        orderDate: Date;
+        subtotal: import("@prisma/client/runtime/library").Decimal;
+    }>;
     remove(id: string): Promise<{
         id: string;
         status: import(".prisma/client").$Enums.PurchOrderStatus;
-        createdAt: Date;
-        updatedAt: Date;
         totalAmount: import("@prisma/client/runtime/library").Decimal;
         taxAmount: import("@prisma/client/runtime/library").Decimal;
+        createdAt: Date;
+        updatedAt: Date;
         createdById: string | null;
         poNumber: string;
         vendorId: string;

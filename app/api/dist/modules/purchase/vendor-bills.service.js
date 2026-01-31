@@ -141,6 +141,28 @@ let VendorBillsService = class VendorBillsService {
         }
         return warnings;
     }
+    async update(id, dto, userId) {
+        const bill = await this.findOne(id, userId);
+        if (bill.status !== client_1.InvoiceStatus.DRAFT) {
+            throw new common_1.BadRequestException("Only Draft bills can be updated");
+        }
+        return this.prisma.invoice.update({
+            where: { id },
+            data: {
+                date: dto.billDate ? new Date(dto.billDate) : undefined,
+                dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+            },
+        });
+    }
+    async remove(id, userId) {
+        const bill = await this.findOne(id, userId);
+        if (bill.status !== client_1.InvoiceStatus.DRAFT) {
+            throw new common_1.BadRequestException("Only Draft bills can be deleted");
+        }
+        return this.prisma.invoice.delete({
+            where: { id },
+        });
+    }
 };
 exports.VendorBillsService = VendorBillsService;
 exports.VendorBillsService = VendorBillsService = __decorate([
