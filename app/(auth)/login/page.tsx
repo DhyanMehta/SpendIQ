@@ -53,6 +53,9 @@ export default function LoginPage() {
       if (data && data.access_token) {
         // Store in localStorage
         localStorage.setItem("accessToken", data.access_token);
+        if (data.user?.name) {
+          localStorage.setItem("userName", data.user.name);
+        }
 
         // Store in cookies for middleware
         setCookie("accessToken", data.access_token, 7);

@@ -87,7 +87,10 @@ export class AuthService {
       },
     });
 
-    await this.mailService.sendOtpEmail(email, otp);
+    // Send email in background (non-blocking) - don't wait for SMTP
+    this.mailService.sendOtpEmail(email, otp).catch((error) => {
+      console.error("[AuthService] Failed to send OTP email:", error);
+    });
 
     // In development mode, return the OTP in the response for easier testing
     const isDevelopment = process.env.NODE_ENV === "development";
@@ -137,11 +140,11 @@ export class AuthService {
     });
 
     if (!otpRecord) {
-      throw new UnauthorizedException("Invalid OTP");
+      throw new UnauthorizedException("Wrong OTP. Please check the code and try again.");
     }
 
     if (otpRecord.expiresAt < new Date()) {
-      throw new UnauthorizedException("OTP has expired");
+      throw new UnauthorizedException("OTP has expired. Please request a new code.");
     }
 
     // Check for existing loginId

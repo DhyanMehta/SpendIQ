@@ -7,10 +7,48 @@ import { UserCircle } from "lucide-react";
 import { NavigationMenu } from "./navigation-menu";
 
 export function Header({ isCollapsed = false }: { isCollapsed?: boolean }) {
-  // Breadcrumb logic normally goes here
   const pathname = usePathname();
-  const title = pathname?.split("/").pop() || "Dashboard";
-  const displayTitle = title.charAt(0).toUpperCase() + title.slice(1);
+
+  // Generate user-friendly title from pathname
+  const getDisplayTitle = () => {
+    if (!pathname) return "Dashboard";
+
+    const segments = pathname.split("/").filter(Boolean);
+
+    // Skip dashboard prefix
+    const relevantSegments = segments.filter(s => s !== "dashboard");
+
+    if (relevantSegments.length === 0) return "Dashboard";
+
+    // Get the last meaningful segment (not a UUID)
+    const lastSegment = relevantSegments[relevantSegments.length - 1];
+
+    // Check if it looks like a UUID or ID (contains hyphens with numbers/letters pattern)
+    const isId = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(lastSegment) ||
+      /^[a-z0-9]{20,}$/i.test(lastSegment) ||
+      lastSegment === "new";
+
+    if (isId) {
+      // Use the second-to-last segment if available
+      const parentSegment = relevantSegments[relevantSegments.length - 2];
+      if (parentSegment) {
+        // Capitalize and singularize common patterns
+        const formatted = parentSegment.charAt(0).toUpperCase() + parentSegment.slice(1);
+        if (lastSegment === "new") {
+          return `New ${formatted.replace(/s$/, "")}`;
+        }
+        return `Edit ${formatted.replace(/s$/, "")}`;
+      }
+    }
+
+    // Format the segment name
+    return lastSegment
+      .split("-")
+      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .join(" ");
+  };
+
+  const displayTitle = getDisplayTitle();
 
   return (
     <header

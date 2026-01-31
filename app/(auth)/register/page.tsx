@@ -124,6 +124,8 @@ export default function RegisterPage() {
       if (loginData && loginData.access_token) {
         // Store in localStorage
         localStorage.setItem("accessToken", loginData.access_token);
+        // Store user name for instant display on dashboard
+        localStorage.setItem("userName", values.name);
 
         // Store in cookies for middleware
         setCookie("accessToken", loginData.access_token, 7);
