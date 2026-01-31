@@ -96,7 +96,7 @@ export function ProductTable({ products, isLoading }: ProductTableProps) {
                     variant="ghost"
                     size="icon"
                     onClick={() =>
-                      router.push(`/dashboard/products/${product.id}`)
+                      router.push(`/dashboard/account/product/${product.id}`)
                     }
                   >
                     <Edit className="h-4 w-4" />

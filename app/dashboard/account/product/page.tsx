@@ -1,25 +1,79 @@
 "use client";
 
-import { PageHeader, EmptyState } from "@/components/layout/page-components";
-import { Package } from "lucide-react";
+import { useProducts, useProductCategories } from "@/lib/hooks/useProducts";
+import { ProductTable } from "@/components/products/ProductTable";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Plus } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 
 export default function ProductPage() {
+  const [search, setSearch] = useState("");
+  const [categoryId, setCategoryId] = useState<string>("all");
+  const [status, setStatus] = useState<string>("ACTIVE");
+
+  const { data: products, isLoading } = useProducts({
+    search: search || undefined,
+    categoryId: categoryId === "all" ? undefined : categoryId,
+    status,
+  });
+
+  const { data: categories } = useProductCategories();
+
   return (
     <div className="space-y-6">
-      <PageHeader
-        title="Products"
-        description="Manage your product catalog and inventory"
-        actionLabel="Add Product"
-        onAction={() => console.log("Add product")}
-      />
+      <div className="flex items-center justify-between">
+        <h1 className="text-3xl font-bold tracking-tight">Products</h1>
+        <Link href="/dashboard/account/product/create">
+          <Button>
+            <Plus className="mr-2 h-4 w-4" />
+            New Product
+          </Button>
+        </Link>
+      </div>
 
-      <EmptyState
-        title="No products yet"
-        description="Create your product catalog by adding items you sell or purchase for your business."
-        actionLabel="Add First Product"
-        onAction={() => console.log("Add product")}
-        Icon={Package}
-      />
+      <div className="flex gap-4 items-center">
+        <Input
+          placeholder="Search products..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="max-w-xs"
+        />
+
+        <Select value={categoryId} onValueChange={setCategoryId}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Category" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Categories</SelectItem>
+            {categories?.map((cat: any) => (
+              <SelectItem key={cat.id} value={cat.id}>
+                {cat.name}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select value={status} onValueChange={setStatus}>
+          <SelectTrigger className="w-[180px]">
+            <SelectValue placeholder="Status" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="ACTIVE">Active</SelectItem>
+            <SelectItem value="ARCHIVED">Archived</SelectItem>
+          </SelectContent>
+        </Select>
+      </div>
+
+      <ProductTable products={products || []} isLoading={isLoading} />
     </div>
   );
 }
