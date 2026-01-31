@@ -35,18 +35,18 @@
  * const userId = req.user.id; // NOT req.user.userId or req.user.sub
  */
 export const AUTH = {
-  /** JWT standard claim for subject (user ID) */
-  JWT_SUBJECT: 'sub',
+    /** JWT standard claim for subject (user ID) */
+    JWT_SUBJECT: 'sub',
 
-  /** User ID property after JWT validation */
-  USER_ID: 'id',
+    /** User ID property after JWT validation */
+    USER_ID: 'id',
 
-  /** LocalStorage key for access token (frontend) */
-  TOKEN_STORAGE_KEY: 'accessToken',
+    /** LocalStorage key for access token (frontend) */
+    TOKEN_STORAGE_KEY: 'accessToken',
 
-  /** Authorization header format */
-  AUTH_HEADER: 'Authorization',
-  AUTH_SCHEME: 'Bearer',
+    /** Authorization header format */
+    AUTH_HEADER: 'Authorization',
+    AUTH_SCHEME: 'Bearer',
 } as const;
 
 /**
@@ -71,14 +71,14 @@ export const AUTH = {
  * });
  */
 export const PARTNER = {
-  /** @internal Database field name for all partner references */
-  DB_FIELD: 'partnerId',
+    /** @internal Database field name for all partner references */
+    DB_FIELD: 'partnerId',
 
-  /** @external API field for vendor-specific endpoints */
-  VENDOR_EXTERNAL: 'vendorId',
+    /** @external API field for vendor-specific endpoints */
+    VENDOR_EXTERNAL: 'vendorId',
 
-  /** @external API field for customer-specific endpoints */
-  CUSTOMER_EXTERNAL: 'customerId',
+    /** @external API field for customer-specific endpoints */
+    CUSTOMER_EXTERNAL: 'customerId',
 } as const;
 
 /**
@@ -99,11 +99,11 @@ export const PARTNER = {
  * analyticalAccountId: string;
  */
 export const ANALYTIC_ACCOUNT = {
-  /** @canonical Standard field name (use this for new code) */
-  CANONICAL: 'analyticAccountId',
+    /** @canonical Standard field name (use this for new code) */
+    CANONICAL: 'analyticAccountId',
 
-  /** @deprecated Legacy name in PurchaseOrderLine - needs migration */
-  LEGACY_PO_LINE: 'analyticalAccountId',
+    /** @deprecated Legacy name in PurchaseOrderLine - needs migration */
+    LEGACY_PO_LINE: 'analyticalAccountId',
 } as const;
 
 /**
@@ -127,11 +127,11 @@ export const ANALYTIC_ACCOUNT = {
  * });
  */
 export const PRICE = {
-  /** @external DTO field name for unit price */
-  EXTERNAL: 'unitPrice',
+    /** @external DTO field name for unit price */
+    EXTERNAL: 'unitPrice',
 
-  /** @internal Database field name (InvoiceLine.priceUnit) */
-  INTERNAL: 'priceUnit',
+    /** @internal Database field name (InvoiceLine.priceUnit) */
+    INTERNAL: 'priceUnit',
 } as const;
 
 /**
@@ -157,17 +157,17 @@ export const PRICE = {
  * });
  */
 export const DATE = {
-  /** @internal Database field for transaction date */
-  DB_FIELD: 'date',
+    /** @internal Database field for transaction date */
+    DB_FIELD: 'date',
 
-  /** @external Vendor bill date in DTO */
-  BILL_EXTERNAL: 'billDate',
+    /** @external Vendor bill date in DTO */
+    BILL_EXTERNAL: 'billDate',
 
-  /** @external Payment date in DTO */
-  PAYMENT_EXTERNAL: 'paymentDate',
+    /** @external Payment date in DTO */
+    PAYMENT_EXTERNAL: 'paymentDate',
 
-  /** @external Order date in DTO */
-  ORDER_EXTERNAL: 'orderDate',
+    /** @external Order date in DTO */
+    ORDER_EXTERNAL: 'orderDate',
 } as const;
 
 /**
@@ -177,23 +177,23 @@ export const DATE = {
  * These are all intentionally different (not inconsistent).
  */
 export const AMOUNT = {
-  /** Total transaction amount */
-  TOTAL: 'totalAmount',
+    /** Total transaction amount */
+    TOTAL: 'totalAmount',
 
-  /** Tax amount */
-  TAX: 'taxAmount',
+    /** Tax amount */
+    TAX: 'taxAmount',
 
-  /** Budgeted amount for budget records */
-  BUDGETED: 'budgetedAmount',
+    /** Budgeted amount for budget records */
+    BUDGETED: 'budgetedAmount',
 
-  /** Payment amount in payment DTOs */
-  PAYMENT: 'paymentAmount',
+    /** Payment amount in payment DTOs */
+    PAYMENT: 'paymentAmount',
 
-  /** Allocated amount in payment allocations */
-  ALLOCATED: 'allocatedAmount',
+    /** Allocated amount in payment allocations */
+    ALLOCATED: 'allocatedAmount',
 
-  /** Line subtotal */
-  SUBTOTAL: 'subtotal',
+    /** Line subtotal */
+    SUBTOTAL: 'subtotal',
 } as const;
 
 /**
@@ -216,11 +216,11 @@ export const AMOUNT = {
  * });
  */
 export const PAYMENT_METHOD = {
-  /** @external DTO field name */
-  EXTERNAL: 'paymentMethod',
+    /** @external DTO field name */
+    EXTERNAL: 'paymentMethod',
 
-  /** @internal Database field name */
-  INTERNAL: 'method',
+    /** @internal Database field name */
+    INTERNAL: 'method',
 } as const;
 
 /**
@@ -230,40 +230,40 @@ export const PAYMENT_METHOD = {
  * This documents the canonical values for each.
  */
 export const STATUS = {
-  /** Budget statuses */
-  BUDGET: {
-    DRAFT: 'DRAFT',
-    CONFIRMED: 'CONFIRMED',
-    REVISED: 'REVISED',
-    ARCHIVED: 'ARCHIVED',
-  },
+    /** Budget statuses */
+    BUDGET: {
+        DRAFT: 'DRAFT',
+        CONFIRMED: 'CONFIRMED',
+        REVISED: 'REVISED',
+        ARCHIVED: 'ARCHIVED',
+    },
 
-  /** Invoice statuses */
-  INVOICE: {
-    DRAFT: 'DRAFT',
-    POSTED: 'POSTED',
-    CANCELLED: 'CANCELLED',
-  },
+    /** Invoice statuses */
+    INVOICE: {
+        DRAFT: 'DRAFT',
+        POSTED: 'POSTED',
+        CANCELLED: 'CANCELLED',
+    },
 
-  /** Payment statuses */
-  PAYMENT: {
-    DRAFT: 'DRAFT',
-    POSTED: 'POSTED',
-    CANCELLED: 'CANCELLED',
-  },
+    /** Payment statuses */
+    PAYMENT: {
+        DRAFT: 'DRAFT',
+        POSTED: 'POSTED',
+        CANCELLED: 'CANCELLED',
+    },
 
-  /** Payment states (separate from status) */
-  PAYMENT_STATE: {
-    NOT_PAID: 'NOT_PAID',
-    PARTIAL: 'PARTIAL',
-    PAID: 'PAID',
-  },
+    /** Payment states (separate from status) */
+    PAYMENT_STATE: {
+        NOT_PAID: 'NOT_PAID',
+        PARTIAL: 'PARTIAL',
+        PAID: 'PAID',
+    },
 
-  /** Contact/Product statuses */
-  ENTITY: {
-    ACTIVE: 'ACTIVE',
-    ARCHIVED: 'ARCHIVED',
-  },
+    /** Contact/Product statuses */
+    ENTITY: {
+        ACTIVE: 'ACTIVE',
+        ARCHIVED: 'ARCHIVED',
+    },
 } as const;
 
 /**
@@ -272,17 +272,17 @@ export const STATUS = {
  * Maps semantic names to database enum values.
  */
 export const INVOICE_TYPE = {
-  /** Vendor bill (we owe money) */
-  VENDOR_BILL: 'IN_INVOICE',
+    /** Vendor bill (we owe money) */
+    VENDOR_BILL: 'IN_INVOICE',
 
-  /** Customer invoice (they owe us) */
-  CUSTOMER_INVOICE: 'OUT_INVOICE',
+    /** Customer invoice (they owe us) */
+    CUSTOMER_INVOICE: 'OUT_INVOICE',
 
-  /** Vendor credit note */
-  VENDOR_REFUND: 'IN_REFUND',
+    /** Vendor credit note */
+    VENDOR_REFUND: 'IN_REFUND',
 
-  /** Customer credit note */
-  CUSTOMER_REFUND: 'OUT_REFUND',
+    /** Customer credit note */
+    CUSTOMER_REFUND: 'OUT_REFUND',
 } as const;
 
 /**
@@ -291,11 +291,11 @@ export const INVOICE_TYPE = {
  * Maps semantic names to database enum values.
  */
 export const PAYMENT_TYPE = {
-  /** Vendor payment (we pay them) */
-  VENDOR_PAYMENT: 'OUTBOUND',
+    /** Vendor payment (we pay them) */
+    VENDOR_PAYMENT: 'OUTBOUND',
 
-  /** Customer payment (they pay us) */
-  CUSTOMER_PAYMENT: 'INBOUND',
+    /** Customer payment (they pay us) */
+    CUSTOMER_PAYMENT: 'INBOUND',
 } as const;
 
 /**
@@ -306,16 +306,16 @@ export const PAYMENT_TYPE = {
  * const field = NAMING.PARTNER.DB_FIELD; // 'partnerId'
  */
 export const NAMING = {
-  AUTH,
-  PARTNER,
-  ANALYTIC_ACCOUNT,
-  PRICE,
-  DATE,
-  AMOUNT,
-  PAYMENT_METHOD,
-  STATUS,
-  INVOICE_TYPE,
-  PAYMENT_TYPE,
+    AUTH,
+    PARTNER,
+    ANALYTIC_ACCOUNT,
+    PRICE,
+    DATE,
+    AMOUNT,
+    PAYMENT_METHOD,
+    STATUS,
+    INVOICE_TYPE,
+    PAYMENT_TYPE,
 } as const;
 
 export default NAMING;

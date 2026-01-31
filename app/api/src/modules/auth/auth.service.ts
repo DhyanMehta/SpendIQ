@@ -53,7 +53,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private mailService: MailService,
-  ) {}
+  ) { }
 
   /**
    * Sends a One-Time Password (OTP) to the specified email address

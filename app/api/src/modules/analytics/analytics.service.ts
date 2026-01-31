@@ -21,7 +21,7 @@ enum BudgetType {
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Get aggregate KPIs across all analytic accounts

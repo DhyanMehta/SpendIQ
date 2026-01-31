@@ -53,7 +53,7 @@ export class PurchaseOrdersService {
    *
    * @param {PrismaService} prisma - Database access service for purchase order operations
    */
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Creates a new purchase order in DRAFT status

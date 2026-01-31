@@ -53,6 +53,6 @@ export class CreateContactDto {
   tags?: string[]; // Array of tag IDs or names
 
   @IsOptional()
-  @IsUrl()
-  imageUrl?: string;
+  @IsString()
+  imageUrl?: string; // Can be URL or base64 data URL
 }
