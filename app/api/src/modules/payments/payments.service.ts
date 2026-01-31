@@ -5,7 +5,7 @@ import { UpdatePaymentDto } from './dto/update-payment.dto';
 
 @Injectable()
 export class PaymentsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Get all payments with pagination and filters
@@ -24,13 +24,13 @@ export class PaymentsService {
     const skip = (page - 1) * limit;
 
     const where: any = {
-      type: 'VENDOR_PAYMENT',
+      type: 'OUTBOUND', // Vendor payments are outbound
     };
 
-    // Search by payment number or vendor name
+    // Search by payment reference or vendor name
     if (params.search) {
       where.OR = [
-        { number: { contains: params.search, mode: 'insensitive' } },
+        { reference: { contains: params.search, mode: 'insensitive' } },
         { partner: { name: { contains: params.search, mode: 'insensitive' } } },
       ];
     }
@@ -123,25 +123,25 @@ export class PaymentsService {
         },
       },
       include: {
-        allocations: true,
+        payments: true,
       },
       orderBy: { date: 'asc' },
     });
 
     // Calculate outstanding for each bill
     return bills.map((bill) => {
-      const totalPaid = bill.allocations.reduce(
+      const totalPaid = bill.payments.reduce(
         (sum, allocation) => sum + Number(allocation.amount),
         0,
       );
-      const outstanding = Number(bill.amountTotal) - totalPaid;
+      const outstanding = Number(bill.totalAmount) - totalPaid;
 
       return {
         id: bill.id,
         number: bill.number,
         date: bill.date,
         dueDate: bill.dueDate,
-        amountTotal: Number(bill.amountTotal),
+        amountTotal: Number(bill.totalAmount),
         paidAmount: totalPaid,
         outstanding,
       };
@@ -181,7 +181,7 @@ export class PaymentsService {
     for (const allocation of dto.allocations) {
       const bill = await this.prisma.invoice.findUnique({
         where: { id: allocation.billId },
-        include: { allocations: true },
+        include: { payments: true },
       });
 
       if (!bill) {
@@ -201,11 +201,11 @@ export class PaymentsService {
       }
 
       // Calculate current outstanding
-      const totalPaid = bill.allocations.reduce(
+      const totalPaid = bill.payments.reduce(
         (sum, alloc) => sum + Number(alloc.amount),
         0,
       );
-      const outstanding = Number(bill.amountTotal) - totalPaid;
+      const outstanding = Number(bill.totalAmount) - totalPaid;
 
       if (allocation.allocatedAmount > outstanding + 0.01) {
         throw new BadRequestException(
@@ -214,30 +214,30 @@ export class PaymentsService {
       }
     }
 
-    // Generate payment number
+    // Generate payment reference
     const lastPayment = await this.prisma.payment.findFirst({
-      where: { type: 'VENDOR_PAYMENT' },
-      orderBy: { number: 'desc' },
+      where: { type: 'OUTBOUND' },
+      orderBy: { reference: 'desc' },
     });
 
     let nextNumber = 1;
-    if (lastPayment?.number) {
-      const match = lastPayment.number.match(/PAY(\d+)/);
+    if (lastPayment?.reference) {
+      const match = lastPayment.reference.match(/PAY(\d+)/);
       if (match) {
         nextNumber = parseInt(match[1], 10) + 1;
       }
     }
-    const paymentNumber = `PAY${String(nextNumber).padStart(6, '0')}`;
+    const paymentReference = `PAY${String(nextNumber).padStart(6, '0')}`;
 
     // Create payment record (DRAFT)
     const payment = await this.prisma.payment.create({
       data: {
-        number: paymentNumber,
+        reference: paymentReference,
         partnerId: dto.vendorId,
         date: dto.paymentDate,
         amount: dto.paymentAmount,
-        paymentMethod: dto.paymentMethod,
-        type: 'VENDOR_PAYMENT',
+        method: dto.paymentMethod,
+        type: 'OUTBOUND',
         status: 'DRAFT',
       },
       include: {
@@ -311,7 +311,7 @@ export class PaymentsService {
     const updateData: any = {};
     if (dto.paymentDate) updateData.date = dto.paymentDate;
     if (dto.paymentAmount) updateData.amount = dto.paymentAmount;
-    if (dto.paymentMethod) updateData.paymentMethod = dto.paymentMethod;
+    if (dto.paymentMethod) updateData.method = dto.paymentMethod;
 
     await this.prisma.payment.update({
       where: { id },
@@ -332,7 +332,7 @@ export class PaymentsService {
           include: {
             invoice: {
               include: {
-                allocations: true,
+                payments: true,
               },
             },
           },
@@ -378,15 +378,15 @@ export class PaymentsService {
       const bill = allocation.invoice;
 
       // Calculate new total paid
-      const totalPaid = bill.allocations.reduce(
+      const totalPaid = bill.payments.reduce(
         (sum, alloc) => sum + Number(alloc.amount),
         0,
       ) + Number(allocation.amount);
 
-      const outstanding = Number(bill.amountTotal) - totalPaid;
+      const outstanding = Number(bill.totalAmount) - totalPaid;
 
       // Determine new payment state
-      let newPaymentState: string;
+      let newPaymentState: 'PAID' | 'PARTIAL' | 'NOT_PAID';
       if (outstanding <= 0.01) {
         newPaymentState = 'PAID';
       } else if (totalPaid > 0.01) {
@@ -405,20 +405,24 @@ export class PaymentsService {
     // Create journal entry for payment
     // Debit: Accounts Payable (reduce liability)
     // Credit: Cash/Bank (reduce asset)
+    // Note: Using placeholder account IDs - these should be configured properly
     await this.prisma.journalEntry.create({
       data: {
-        entryNumber: `JE-PAY-${payment.number}`,
+        number: `JE-PAY-${payment.reference}`,
         date: payment.date,
-        reference: `Payment ${payment.number}`,
+        reference: `Payment ${payment.reference}`,
+        state: 'POSTED',
         lines: {
           create: [
             {
-              account: 'Accounts Payable',
+              accountId: '00000000-0000-0000-0000-000000000001', // Placeholder: Accounts Payable
+              label: 'Accounts Payable',
               debit: Number(payment.amount),
               credit: 0,
             },
             {
-              account: payment.paymentMethod === 'CASH' ? 'Cash' : 'Bank',
+              accountId: '00000000-0000-0000-0000-000000000002', // Placeholder: Cash/Bank
+              label: payment.method === 'CASH' ? 'Cash' : 'Bank',
               debit: 0,
               credit: Number(payment.amount),
             },

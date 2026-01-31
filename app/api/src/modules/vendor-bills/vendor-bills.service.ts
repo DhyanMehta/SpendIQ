@@ -6,7 +6,7 @@ import { RegisterPaymentDto } from './dto/register-payment.dto';
 
 @Injectable()
 export class VendorBillsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createDto: CreateVendorBillDto, userId: string) {
     // Verify vendor exists and is type VENDOR
@@ -219,7 +219,7 @@ export class VendorBillsService {
     }
 
     // Calculate new totals if lines provided
-    let subtotal = existing.totalAmount;
+    let subtotal = Number(existing.totalAmount);
     if (updateDto.lines) {
       subtotal = updateDto.lines.reduce(
         (sum, line) => sum + line.quantity * line.unitPrice,
@@ -302,32 +302,24 @@ export class VendorBillsService {
     const budgetUpdates = [];
     for (const line of bill.lines) {
       if (line.analyticAccountId) {
-        // Find active budget for this analytic account and date
+        // Find active budget for this analytic account and date range
         const budget = await this.prisma.budget.findFirst({
           where: {
-            departmentId: line.analyticAccountId,
-            fiscalYear: bill.date.getFullYear(),
-            status: 'APPROVED',
-          },
-          include: {
-            lines: {
-              where: {
-                productId: line.productId,
-              },
-            },
+            analyticAccountId: line.analyticAccountId,
+            startDate: { lte: bill.date },
+            endDate: { gte: bill.date },
+            status: 'CONFIRMED',
           },
         });
 
-        if (budget && budget.lines.length > 0) {
-          const budgetLine = budget.lines[0];
-          const currentActual = Number(budgetLine.plannedAmount || 0);
-          const newActual = currentActual + Number(line.subtotal);
-          
+        if (budget) {
+          const budgetedAmount = Number(budget.budgetedAmount);
+          const lineAmount = Number(line.subtotal);
+
           budgetUpdates.push({
             budgetId: budget.id,
-            lineId: budgetLine.id,
-            newActual,
-            isOverBudget: newActual > Number(budgetLine.plannedAmount),
+            amount: lineAmount,
+            isOverBudget: lineAmount > budgetedAmount,
           });
         }
       }
@@ -439,7 +431,7 @@ export class VendorBillsService {
     // Update bill payment state
     const newTotalPaid = totalPaid + paymentDto.amount;
     let paymentState: 'NOT_PAID' | 'PARTIAL' | 'PAID' = 'NOT_PAID';
-    
+
     if (newTotalPaid >= Number(bill.totalAmount)) {
       paymentState = 'PAID';
     } else if (newTotalPaid > 0) {

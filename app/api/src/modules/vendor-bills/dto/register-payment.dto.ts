@@ -1,4 +1,4 @@
-import { IsNotEmpty, IsNumber, IsDate, IsString, Min } from 'class-validator';
+import { IsNotEmpty, IsNumber, IsDate, IsString, Min, IsOptional } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class RegisterPaymentDto {

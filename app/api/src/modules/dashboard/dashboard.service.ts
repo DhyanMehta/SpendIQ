@@ -2,10 +2,27 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../common/database/prisma.service";
 import { InvoiceType, InvoiceStatus } from "@prisma/client";
 
+/**
+ * Dashboard Service
+ * 
+ * Provides aggregated business metrics and chart data for the main dashboard.
+ * Queries invoices and budgets to compute KPIs and visualizations.
+ */
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
 
+  /**
+   * Calculate main dashboard KPI metrics
+   * 
+   * Computes:
+   * - Income: Sum of all posted customer invoices (OUT_INVOICE)
+   * - Expense: Sum of all posted vendor bills (IN_INVOICE)
+   * - Balance: Income minus Expense
+   * - Savings Rate: Percentage of income retained as profit
+   * 
+   * @returns Object with balance, income, expense, savings, and savingsRate
+   */
   async getMetrics() {
     // 1. Calculate Income (Sales)
     const incomeAgg = await this.prisma.invoice.aggregate({
@@ -42,36 +59,30 @@ export class DashboardService {
     };
   }
 
+  /**
+   * Get monthly income vs expense data for money flow chart
+   * 
+   * Groups all posted invoices by month and separates into:
+   * - Income: Customer invoices (OUT_INVOICE)
+   * - Expense: Vendor bills (IN_INVOICE)
+   * 
+   * @returns Array of objects with { name: monthName, income: number, expense: number }
+   */
   async getMoneyFlow() {
-    // Get last 6 months data
-    // For MVP, just grouping purely by DB data might be sparse.
-    // We will query all posted invoices and group by month in JS for simplicity.
+    // Get all posted invoices
     const allInvoices = await this.prisma.invoice.findMany({
       where: { status: InvoiceStatus.POSTED },
       select: { date: true, type: true, totalAmount: true },
     });
 
-    // Grouping logic (simplified)
+    // Month name mapping
     const months = [
-      "Jan",
-      "Feb",
-      "Mar",
-      "Apr",
-      "May",
-      "Jun",
-      "Jul",
-      "Aug",
-      "Sep",
-      "Oct",
-      "Nov",
-      "Dec",
+      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
     ];
-    const groups: Record<
-      string,
-      { name: string; income: number; expense: number }
-    > = {};
 
-    // Initialize data for last 6 months (optional, skipping for brevity, doing sparse map)
+    // Group by month
+    const groups: Record<string, { name: string; income: number; expense: number }> = {};
 
     allInvoices.forEach((inv) => {
       const date = new Date(inv.date);
@@ -90,6 +101,14 @@ export class DashboardService {
     return Object.values(groups);
   }
 
+  /**
+   * Get the 5 most recent transactions
+   * 
+   * Returns recent invoices (both sales and purchases) with partner details.
+   * Ordered by date descending.
+   * 
+   * @returns Array of Invoice objects with partner relation
+   */
   async getRecentTransactions() {
     return this.prisma.invoice.findMany({
       take: 5,
@@ -98,24 +117,31 @@ export class DashboardService {
     });
   }
 
+  /**
+   * Get budget utilization data for donut chart
+   * 
+   * Returns the user's budgets formatted for visualization.
+   * Each budget becomes a slice with name, value (budgeted amount), and color.
+   * 
+   * @param userId - The authenticated user's ID
+   * @returns Array of objects with { name, value, color } for chart rendering
+   */
   async getBudgetUtilization(userId: string) {
-    // Added userId parameter
-    // Get budgets and compute usage
+    // Get budgets created by this user
     const budgets = await this.prisma.budget.findMany({
       where: { createdBy: userId },
       take: 5,
       orderBy: { createdAt: "desc" },
     });
 
-    // Transform for Donut Chart (Top 5 categories by planned amount)
-    return budgets
-      .map((b) => {
-        return {
-          name: b.name,
-          value: Number(b.budgetedAmount), // Use budgetedAmount directly
-          color: "#" + Math.floor(Math.random() * 16777215).toString(16), // Random color for now
-        };
-      })
-      .slice(0, 5);
+    // Define consistent colors for budget visualization
+    const colors = ["#8b5cf6", "#ec4899", "#10b981", "#f59e0b", "#3b82f6"];
+
+    // Transform for Donut Chart
+    return budgets.map((b, index) => ({
+      name: b.name,
+      value: Number(b.budgetedAmount),
+      color: colors[index % colors.length],
+    }));
   }
 }
