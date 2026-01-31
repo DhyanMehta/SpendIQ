@@ -16,6 +16,7 @@ import { VendorBillsModule } from "./modules/vendor-bills/vendor-bills.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { SalesModule } from "./modules/sales/sales.module";
 import { InvoicesModule } from "./modules/invoices/invoices.module";
+import { UsersModule } from "./modules/users/users.module";
 
 @Module({
   imports: [
@@ -35,6 +36,7 @@ import { InvoicesModule } from "./modules/invoices/invoices.module";
     PaymentsModule,
     SalesModule,
     InvoicesModule,
+    UsersModule,
   ],
   controllers: [],
   providers: [],
