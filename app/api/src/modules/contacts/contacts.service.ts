@@ -198,11 +198,21 @@ export class ContactsService {
     });
   }
 
-  async enablePortalAccess(id: string) {
+  async enablePortalAccess(id: string, creatorId?: string) {
     const contact = await this.findOne(id);
 
     if (contact.portalUserId) {
       throw new ConflictException("Portal access already enabled");
+    }
+
+    // Get creator's organizationId to inherit
+    let organizationId: string | null = null;
+    if (creatorId) {
+      const creator = await this.prisma.user.findUnique({
+        where: { id: creatorId },
+        select: { organizationId: true },
+      });
+      organizationId = creator?.organizationId || null;
     }
 
     // Create portal user
@@ -216,6 +226,7 @@ export class ContactsService {
         password: randomPassword, // Should be hashed in production
         name: contact.name,
         role: "PORTAL_USER",
+        organizationId: organizationId, // Inherit organization from creator
       },
     });
 

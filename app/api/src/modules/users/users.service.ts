@@ -16,7 +16,17 @@ export class UsersService {
     private mailService: MailService,
   ) {}
 
-  async create(dto: CreateUserDto) {
+  async create(dto: CreateUserDto, creatorId: string) {
+    // Get the creator's organizationId to inherit
+    const creator = await this.prisma.user.findUnique({
+      where: { id: creatorId },
+      select: { organizationId: true },
+    });
+
+    if (!creator?.organizationId) {
+      throw new BadRequestException("Creator does not have an organization");
+    }
+
     // 1. Check for duplicates (Email or Login ID)
     const existingUser = await this.prisma.user.findFirst({
       where: {
@@ -39,13 +49,8 @@ export class UsersService {
     // 2. Hash Password
     const hashedPassword = await bcrypt.hash(dto.password, 10);
 
-    // 3. Create User
+    // 3. Create User with inherited organizationId
     try {
-      // If creating a PORTAL_USER and we have an associated contact?
-      // For now, this is a direct admin creation, so we just create the user.
-      // Linkage logic usually happens when creating a contact -> portal user.
-      // Here we are creating a generic internal user or standalone portal user.
-
       const user = await this.prisma.user.create({
         data: {
           name: dto.name,
@@ -53,6 +58,7 @@ export class UsersService {
           email: dto.email,
           password: hashedPassword,
           role: dto.role,
+          organizationId: creator.organizationId, // Inherit organization from creator
         },
         select: {
           id: true,

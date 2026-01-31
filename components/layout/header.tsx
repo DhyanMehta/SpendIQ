@@ -1,6 +1,7 @@
 "use client";
 
 import { usePathname } from "next/navigation";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { UserCircle } from "lucide-react";
@@ -66,12 +67,14 @@ export function Header({ isCollapsed = false }: { isCollapsed?: boolean }) {
         </div>
       </div>
       <div className="flex items-center gap-4">
-        <Button variant="ghost" size="sm" className="gap-2">
-          <span className="hidden md:inline-block text-sm font-medium text-muted-foreground">
-            Admin User
-          </span>
-          <UserCircle className="h-5 w-5" />
-        </Button>
+        <Link href="/profile">
+          <Button variant="ghost" size="sm" className="gap-2 hover:bg-slate-100">
+            <span className="hidden md:inline-block text-sm font-medium text-muted-foreground">
+              My Profile
+            </span>
+            <UserCircle className="h-5 w-5" />
+          </Button>
+        </Link>
       </div>
     </header>
   );

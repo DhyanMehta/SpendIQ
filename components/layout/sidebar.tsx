@@ -138,7 +138,7 @@ export function Sidebar({
           </Link>
 
           {/* Theme Toggle */}
-          <div className="pt-4 border-t border-border mt-2 flex justify-center">
+          <div className="pt-4 px-5 border-t border-border mt-4 flex justify-center">
             <ThemeToggle collapsed={isCollapsed} />
           </div>
         </div>
