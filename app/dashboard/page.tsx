@@ -12,7 +12,13 @@ import { AddWidgetDialog } from "@/components/dashboard/add-widget-dialog";
 
 export default function DashboardPage() {
   const [showAddWidgetDialog, setShowAddWidgetDialog] = useState(false);
-  const [userName, setUserName] = useState<string>("User");
+  // Initialize with stored name to prevent flash of "User"
+  const [userName, setUserName] = useState<string>(() => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem("userName") || "User";
+    }
+    return "User";
+  });
   const [metrics, setMetrics] = useState<any>({
     balance: 0,
     income: 0,
@@ -42,6 +48,8 @@ export default function DashboardPage() {
         if (recentTx) setTransactions(recentTx);
         if (profileData && profileData.name) {
           setUserName(profileData.name);
+          // Keep localStorage in sync
+          localStorage.setItem("userName", profileData.name);
         }
       } catch (error) {
         console.error("Failed to load dashboard data", error);
