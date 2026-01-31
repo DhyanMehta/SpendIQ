@@ -19,7 +19,7 @@ export class InvoicesService {
     private journalEntriesService: JournalEntriesService,
   ) {}
 
-  async create(dto: CreateInvoiceDto) {
+  async create(dto: CreateInvoiceDto, userId?: string) {
     // Calculate totals
     let totalAmount = 0;
     const linesData = dto.lines.map((line) => {
@@ -38,8 +38,9 @@ export class InvoicesService {
     return this.prisma.invoice.create({
       data: {
         number: dto.number,
+        creator: userId ? { connect: { id: userId } } : undefined,
         type: dto.type,
-        partnerId: dto.partnerId,
+        partner: { connect: { id: dto.partnerId } },
         date: new Date(dto.date),
         dueDate: new Date(dto.dueDate),
         status: InvoiceStatus.DRAFT,
@@ -50,11 +51,12 @@ export class InvoicesService {
     });
   }
 
-  async findAll(type?: InvoiceType, partnerId?: string) {
+  async findAll(type?: InvoiceType, partnerId?: string, userId?: string) {
     return this.prisma.invoice.findMany({
       where: {
         type: type ? type : undefined,
         partnerId: partnerId ? partnerId : undefined,
+        createdById: userId || undefined,
       },
       include: { partner: true },
       orderBy: { date: "desc" },
@@ -73,7 +75,7 @@ export class InvoicesService {
     return invoice;
   }
 
-  async post(id: string) {
+  async post(id: string, userId?: string) {
     const invoice = await this.findOne(id);
     if (invoice.status === InvoiceStatus.POSTED) {
       throw new BadRequestException("Invoice already posted");
@@ -119,11 +121,14 @@ export class InvoicesService {
     }
 
     // 3. Create Journal Entry
-    const entry = await this.journalEntriesService.create({
-      date: invoice.date,
-      reference: invoice.number || `INV/${invoice.id}`,
-      lines: lines,
-    });
+    const entry = await this.journalEntriesService.create(
+      {
+        date: invoice.date,
+        reference: invoice.number || `INV/${invoice.id}`,
+        lines: lines,
+      },
+      userId,
+    );
 
     // 4. Update Invoice
     return this.prisma.invoice.update({

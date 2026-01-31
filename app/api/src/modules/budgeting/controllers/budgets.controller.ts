@@ -16,13 +16,14 @@ import { BudgetStatus, Role } from "@prisma/client";
 import { JwtAuthGuard } from "../../../common/auth/jwt-auth.guard";
 import { RolesGuard } from "../../../common/guards/roles.guard";
 import { Roles } from "../../../common/decorators/roles.decorator";
+import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 
 /**
  * Budgets Controller
- * 
+ *
  * Manages budget CRUD operations including creation, updates, approval, and revision workflow.
  * Budgets track planned spending/income for specific analytic accounts (cost centers).
- * 
+ *
  * Workflow:
  * 1. Create DRAFT budget
  * 2. Edit while in DRAFT status
@@ -32,7 +33,7 @@ import { Roles } from "../../../common/decorators/roles.decorator";
 @Controller("budgets")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BudgetsController {
-  constructor(private readonly budgetsService: BudgetsService) { }
+  constructor(private readonly budgetsService: BudgetsService) {}
 
   /**
    * Create a new budget
@@ -97,10 +98,11 @@ export class BudgetsController {
    */
   @Get()
   findAll(
+    @CurrentUser() user: { id: string },
     @Query("status") status?: BudgetStatus,
     @Query("analyticAccountId") analyticAccountId?: string,
   ) {
-    return this.budgetsService.findAll(status, analyticAccountId);
+    return this.budgetsService.findAll(status, analyticAccountId, user.id);
   }
 
   /**

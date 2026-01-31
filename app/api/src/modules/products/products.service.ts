@@ -13,7 +13,7 @@ import { Status } from "@prisma/client";
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
-  async create(createProductDto: CreateProductDto) {
+  async create(createProductDto: CreateProductDto, userId?: string) {
     // Handle category (create if name provided, use ID otherwise)
     let categoryId = createProductDto.categoryId;
 
@@ -40,6 +40,7 @@ export class ProductsService {
         purchasePrice: createProductDto.purchasePrice,
         categoryId,
         defaultAnalyticAccountId: createProductDto.defaultAnalyticAccountId,
+        createdById: userId,
       },
       include: {
         category: true,
@@ -50,11 +51,15 @@ export class ProductsService {
     return product;
   }
 
-  async findAll(query: ProductQueryDto) {
+  async findAll(query: ProductQueryDto, userId?: string) {
     const where: any = {};
 
     if (query.search) {
       where.name = { contains: query.search, mode: "insensitive" };
+    }
+
+    if (userId) {
+      where.createdById = userId;
     }
 
     if (query.categoryId) {

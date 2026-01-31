@@ -13,6 +13,7 @@ import { InvoicesService } from "./invoices.service";
 import { CreateInvoiceDto } from "./dto/create-invoice.dto";
 import { UpdateInvoiceDto } from "./dto/update-invoice.dto";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
 
 @Controller("invoices")
 @UseGuards(JwtAuthGuard)
@@ -20,12 +21,13 @@ export class InvoicesController {
   constructor(private readonly invoicesService: InvoicesService) {}
 
   @Post()
-  create(@Body() createInvoiceDto: CreateInvoiceDto) {
-    return this.invoicesService.create(createInvoiceDto);
+  create(@Body() createInvoiceDto: CreateInvoiceDto, @CurrentUser() user: any) {
+    return this.invoicesService.create(createInvoiceDto, user.id);
   }
 
   @Get()
   findAll(
+    @CurrentUser() user: any,
     @Query("page") page = "1",
     @Query("limit") limit = "10",
     @Query("type") type?: string,
@@ -38,6 +40,7 @@ export class InvoicesController {
       type,
       state,
       partnerId,
+      userId: user.id,
     });
   }
 
@@ -52,8 +55,8 @@ export class InvoicesController {
   }
 
   @Post(":id/post")
-  post(@Param("id") id: string) {
-    return this.invoicesService.post(id);
+  post(@Param("id") id: string, @CurrentUser() user: any) {
+    return this.invoicesService.post(id, user.id);
   }
 
   @Post(":id/payment")

@@ -15,9 +15,9 @@ export class ContactsService {
   constructor(
     private prisma: PrismaService,
     private mailService: MailService,
-  ) { }
+  ) {}
 
-  async create(createContactDto: CreateContactDto) {
+  async create(createContactDto: CreateContactDto, userId?: string) {
     // Check for existing email
     const existing = await this.prisma.contact.findUnique({
       where: { email: createContactDto.email },
@@ -46,6 +46,7 @@ export class ContactsService {
         tags: {
           create: tagConnections,
         },
+        createdById: userId,
       },
       include: {
         tags: {
@@ -65,7 +66,7 @@ export class ContactsService {
     return contact;
   }
 
-  async findAll(query: ContactQueryDto) {
+  async findAll(query: ContactQueryDto, userId?: string) {
     const where: any = {};
 
     if (query.search) {
@@ -86,8 +87,11 @@ export class ContactsService {
     if (query.status) {
       where.status = query.status;
     } else {
-      // Default: only show active contacts
       where.status = Status.ACTIVE;
+    }
+
+    if (userId) {
+      where.createdById = userId;
     }
 
     return this.prisma.contact.findMany({

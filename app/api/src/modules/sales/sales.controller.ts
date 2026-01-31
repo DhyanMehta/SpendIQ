@@ -13,6 +13,7 @@ import { SalesService } from "./sales.service";
 import { CreateSalesOrderDto } from "./dto/create-sales-order.dto";
 import { UpdateSalesOrderDto } from "./dto/update-sales-order.dto";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
+import { CurrentUser } from "../../common/decorators/current-user.decorator";
 
 @Controller("sales")
 @UseGuards(JwtAuthGuard)
@@ -20,18 +21,32 @@ export class SalesController {
   constructor(private readonly salesService: SalesService) {}
 
   @Post()
-  create(@Body() createDto: CreateSalesOrderDto) {
-    return this.salesService.create(createDto);
+  create(
+    @Body() createDto: CreateSalesOrderDto,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.salesService.create(createDto, user.id);
   }
 
   @Get()
-  findAll(@Query() query: any) {
+  findAll(
+    @Query()
+    query: {
+      page?: string;
+      limit?: string;
+      search?: string;
+      status?: string;
+      customerId?: string;
+    },
+    @CurrentUser() user: { id: string },
+  ) {
     return this.salesService.findAll({
       page: Number(query.page) || 1,
       limit: Number(query.limit) || 10,
       search: query.search,
       status: query.status,
       customerId: query.customerId,
+      userId: user.id,
     });
   }
 

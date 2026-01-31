@@ -6,18 +6,21 @@ import { EntryState } from "@prisma/client";
 export class JournalEntriesService {
   constructor(private readonly prisma: PrismaService) {}
 
-  async create(data: {
-    date: Date;
-    reference?: string;
-    lines: {
-      accountId: string;
-      partnerId?: string;
-      label: string;
-      debit: number;
-      credit: number;
-      analyticAccountId?: string;
-    }[];
-  }) {
+  async create(
+    data: {
+      date: Date;
+      reference?: string;
+      lines: {
+        accountId: string;
+        partnerId?: string;
+        label: string;
+        debit: number;
+        credit: number;
+        analyticAccountId?: string;
+      }[];
+    },
+    userId?: string,
+  ) {
     // Validate Double Entry
     const totalDebit = data.lines.reduce((sum, line) => sum + line.debit, 0);
     const totalCredit = data.lines.reduce((sum, line) => sum + line.credit, 0);
@@ -31,6 +34,7 @@ export class JournalEntriesService {
 
     return this.prisma.journalEntry.create({
       data: {
+        createdById: userId,
         date: data.date,
         reference: data.reference,
         state: EntryState.DRAFT,
@@ -42,8 +46,12 @@ export class JournalEntriesService {
     });
   }
 
-  async findAll() {
+  async findAll(userId?: string) {
+    const where: any = {};
+    if (userId) where.createdById = userId;
+
     return this.prisma.journalEntry.findMany({
+      where,
       include: { lines: { include: { account: true, analyticAccount: true } } },
       orderBy: { date: "desc" },
     });
