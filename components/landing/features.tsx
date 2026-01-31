@@ -52,41 +52,49 @@ const features = [
 
 export function Features() {
   return (
-    <section className="py-20 bg-muted/30" id="features">
-      <div className="container px-4 md:px-6 mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16 space-y-4">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-foreground">
+    <section className="py-24 bg-muted/30 relative overflow-hidden" id="features">
+      {/* Background decoration */}
+      <div className="absolute inset-0 -z-10 bg-[linear-gradient(to_right,#80808012_1px,transparent_1px),linear-gradient(to_bottom,#80808012_1px,transparent_1px)] bg-[size:24px_24px]"></div>
+      
+      <div className="container px-4 md:px-6 mx-auto relative">
+        <div className="text-center max-w-3xl mx-auto mb-20 space-y-4">
+          <div className="inline-flex items-center justify-center px-3 py-1 rounded-full bg-primary/10 text-primary text-xs font-medium mb-2">
+             Key Capabilities
+          </div>
+          <h2 className="text-3xl font-bold tracking-tight sm:text-5xl text-foreground">
             Enterprise budget accounting
           </h2>
-          <p className="text-lg text-muted-foreground">
-            Built for real businesses that need reliable financial controls.
+          <p className="text-lg text-muted-foreground max-w-2xl mx-auto">
+            Built for real businesses that need reliable financial controls, automated workflows, and complete audit trails.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-7xl mx-auto">
           {features.map((feature, index) => (
             <motion.div
               key={index}
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: index * 0.08 }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
               viewport={{ once: true }}
+              className="group"
             >
-              <Card className="h-full border-border bg-card hover:shadow-lg transition-shadow">
-                <CardHeader>
-                  <div className="w-11 h-11 rounded-lg bg-primary/10 flex items-center justify-center mb-4 text-primary">
-                    <feature.icon className="h-5 w-5" />
-                  </div>
-                  <CardTitle className="text-lg text-foreground">
-                    {feature.title}
-                  </CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground text-sm leading-relaxed">
-                    {feature.description}
-                  </p>
-                </CardContent>
-              </Card>
+              <div className="h-full relative rounded-2xl border border-border bg-card p-6 shadow-sm transition-all duration-300 hover:shadow-[0_8px_30px_rgb(0,0,0,0.12)] hover:border-primary/20 hover:-translate-y-1">
+                <div className="absolute top-0 right-0 p-6 opacity-0 group-hover:opacity-100 transition-opacity">
+                   <div className="w-20 h-20 bg-primary/5 rounded-full blur-2xl absolute top-0 right-0 -mr-10 -mt-10"></div>
+                </div>
+                
+                <div className="mb-6 inline-flex h-14 w-14 items-center justify-center rounded-xl bg-gradient-to-br from-primary/10 to-primary/5 text-primary ring-1 ring-inset ring-primary/20 transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
+                  <feature.icon className="h-7 w-7" />
+                </div>
+                
+                <h3 className="mb-3 text-xl font-bold leading-tight text-foreground group-hover:text-primary transition-colors">
+                  {feature.title}
+                </h3>
+                <p className="text-muted-foreground leading-relaxed">
+                  {feature.description}
+                </p>
+              </div>
             </motion.div>
           ))}
         </div>

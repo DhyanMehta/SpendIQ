@@ -56,11 +56,22 @@ export default function LoginPage() {
         if (data.user?.name) {
           localStorage.setItem("userName", data.user.name);
         }
+        if (data.user?.role) {
+          localStorage.setItem("userRole", data.user.role);
+        }
 
         // Store in cookies for middleware
         setCookie("accessToken", data.access_token, 7);
+        if (data.user?.role) {
+          setCookie("userRole", data.user.role, 7);
+        }
 
-        router.push("/dashboard");
+        // Redirect based on role
+        if (data.user?.role === "PORTAL_USER") {
+          router.push("/portal");
+        } else {
+          router.push("/dashboard");
+        }
       } else {
         setError("Invalid response from server");
       }

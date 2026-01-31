@@ -32,15 +32,16 @@ const problems = [
 
 export function ProblemSolution() {
   return (
-    <section className="py-20 bg-background">
+    <section className="py-24 bg-background relative">
+      <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[500px] bg-red-500/5 rounded-full blur-[100px] -z-10" />
+      
       <div className="container px-4 md:px-6 mx-auto">
-        <div className="text-center max-w-3xl mx-auto mb-16">
-          <h2 className="text-3xl font-bold tracking-tight sm:text-4xl text-foreground mb-4">
-            Why budget systems fail
+        <div className="text-center max-w-3xl mx-auto mb-20">
+          <h2 className="text-3xl font-bold tracking-tight sm:text-5xl text-foreground mb-6">
+            Why traditional budgets fail
           </h2>
-          <p className="text-lg text-muted-foreground">
-            Traditional approaches leave businesses vulnerable to cost overruns
-            and financial surprises.
+          <p className="text-xl text-muted-foreground">
+            Spreadsheets and legacy ERPs weren't built for modern speed.
           </p>
         </div>
 
@@ -51,52 +52,57 @@ export function ProblemSolution() {
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: index * 0.1 }}
-              viewport={{ once: true }}
-              className={`flex flex-col ${
-                index % 2 === 0 ? "lg:flex-row" : "lg:flex-row-reverse"
-              } gap-8 items-center`}
+              viewport={{ once: true, margin: "-100px" }}
+              className={`flex flex-col lg:flex-row items-center gap-8 ${
+                index % 2 === 1 ? "lg:flex-row-reverse" : ""
+              }`}
             >
-              {/* Problem */}
-              <div className="flex-1 space-y-3">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-destructive/10 text-destructive">
+              {/* Problem Side (Text Only) */}
+              <div className="flex-1 space-y-4">
+                <div className="inline-flex items-center justify-center p-3 rounded-lg bg-red-100 dark:bg-red-900/30 text-red-600 mb-2">
                   <item.icon className="h-6 w-6" />
                 </div>
-                <h3 className="text-xl font-semibold text-foreground">
-                  {item.title}
-                </h3>
-                <p className="text-muted-foreground leading-relaxed">
-                  {item.description}
-                </p>
+                <div>
+                  <h3 className="text-xl font-bold text-foreground mb-2">
+                    {item.title}
+                  </h3>
+                  <p className="text-muted-foreground leading-relaxed">
+                    {item.description}
+                  </p>
+                </div>
               </div>
 
-              {/* Arrow */}
-              <div className="hidden lg:block">
-                <svg
-                  className="w-12 h-12 text-muted-foreground/30"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
+              {/* Arrow Connection */}
+              <div className="hidden lg:flex items-center justify-center text-muted-foreground/30">
+                 <svg
+                    width="24"
+                    height="24"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
                     strokeLinecap="round"
                     strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 7l5 5m0 0l-5 5m5-5H6"
-                  />
-                </svg>
+                    className="w-8 h-8"
+                  >
+                    <path d="M5 12h14" />
+                    <path d="m12 5 7 7-7 7" />
+                  </svg>
               </div>
 
-              {/* Solution */}
-              <div className="flex-1 space-y-3 bg-card p-6 rounded-lg border border-border">
-                <div className="inline-flex items-center gap-2">
-                  <div className="w-2 h-2 rounded-full bg-primary" />
-                  <span className="text-sm font-medium text-primary">
-                    Solution
-                  </span>
+              {/* Solution Side (Card) */}
+              <div className="flex-1 w-full lg:w-auto">
+                <div className="bg-card border border-border/50 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-primary" />
+                    <span className="text-sm font-semibold text-primary">
+                      Solution
+                    </span>
+                  </div>
+                  <p className="text-foreground font-medium leading-relaxed">
+                    {item.solution}
+                  </p>
                 </div>
-                <p className="text-foreground font-medium leading-relaxed">
-                  {item.solution}
-                </p>
               </div>
             </motion.div>
           ))}

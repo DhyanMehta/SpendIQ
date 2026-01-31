@@ -8,13 +8,19 @@ interface RequestOptions {
   body?: any;
   headers?: Record<string, string>;
   token?: string;
+  skipAuthRedirect?: boolean;
 }
 
 export async function apiRequest(
   endpoint: string,
   options: RequestOptions = {},
 ) {
-  const { method = "GET", body, headers = {} } = options;
+  const {
+    method = "GET",
+    body,
+    headers = {},
+    skipAuthRedirect = false,
+  } = options;
 
   let token = options.token;
   if (!token && typeof window !== "undefined") {
@@ -34,26 +40,23 @@ export async function apiRequest(
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
-    // Handle 401 Unauthorized globally if needed (e.g., redirect to login)
-    if (response.status === 401 && typeof window !== "undefined") {
-      // Prevention of infinite loop: Clear auth state before redirecting
-      localStorage.removeItem("accessToken");
-      // Dynamic import to avoid circular dependencies if simple
-      // or just import at top if clean. Assuming top import for better practice.
-      // But replace_file_content is chunk based.
-      // I will add the cleanup logic here.
-      // We need to import deleteCookie. I will add it to the top of the file in a separate call if needed,
-      // or I can try to use document.cookie directly here if I don't want to touch imports yet,
-      // but it's better to use the helper.
-      // Wait, I can't add an import easily with a single chunk block if it's far away.
-      // I'll use document.cookie directly for reliability in this specific error handler
-      // to ensure it works without import errors or multi-step edits.
-      // Actually, I can use the same logic as deleteCookie:
-      document.cookie =
-        "accessToken=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;";
+    // Handle 401 Unauthorized globally (redirect to login) unless skipAuthRedirect is true
+    if (
+      response.status === 401 &&
+      typeof window !== "undefined" &&
+      !skipAuthRedirect
+    ) {
+      // Don't redirect for auth routes (login, register, etc.)
+      const isAuthRoute = endpoint.startsWith("/auth/");
+      if (!isAuthRoute) {
+        // Clear auth state before redirecting to prevent infinite loops
+        localStorage.removeItem("accessToken");
+        document.cookie =
+          "accessToken=;expires=Thu, 01 Jan 1970 00:00:00 UTC;path=/;";
 
-      window.location.href = "/login";
-      return;
+        window.location.href = "/login";
+        return;
+      }
     }
 
     if (!response.ok) {

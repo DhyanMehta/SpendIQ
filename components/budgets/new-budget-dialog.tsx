@@ -96,7 +96,7 @@ export function NewBudgetDialog({
 
       // Navigate to the new budget detail page
       if (response?.id) {
-        router.push(`/dashboard/budgets/${response.id}`);
+        router.push(`/dashboard/account/budget/${response.id}`);
       }
     } catch (e: any) {
       console.error("[NewBudget] Failed:", e);

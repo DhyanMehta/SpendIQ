@@ -3,7 +3,6 @@ import { ProblemSolution } from "@/components/landing/problem-solution";
 import { Features } from "@/components/landing/features";
 import { SystemFlow } from "@/components/landing/system-flow";
 import { Trust } from "@/components/landing/trust";
-import { CTA } from "@/components/landing/cta";
 import { Footer } from "@/components/landing/footer";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
@@ -14,7 +13,7 @@ export default function LandingPage() {
     <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
       {/* Global Navbar */}
       <header className="fixed top-0 left-0 w-full z-50 bg-background/80 backdrop-blur-md border-b border-border">
-        <div className="container mx-auto px-4 h-16 flex items-center justify-between">
+        <div className="container mx-auto px-25 h-16 flex items-center justify-between">
           <div className="flex items-center gap-2 font-bold text-xl">
             <div className="bg-primary text-primary-foreground p-1.5 rounded-md">
               <Building2 className="h-5 w-5" />
@@ -65,7 +64,7 @@ export default function LandingPage() {
         <Features />
         <SystemFlow />
         <Trust />
-        <CTA />
+        
       </main>
 
       <Footer />

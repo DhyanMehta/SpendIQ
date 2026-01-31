@@ -7,10 +7,14 @@ import { PrismaService } from "../../common/database/prisma.service";
 import { CreateUserDto } from "./dto/create-user.dto";
 import * as bcrypt from "bcrypt";
 import { Role } from "@prisma/client";
+import { MailService } from "../mail/mail.service";
 
 @Injectable()
 export class UsersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+  ) {}
 
   async create(dto: CreateUserDto) {
     // 1. Check for duplicates (Email or Login ID)
@@ -28,6 +32,9 @@ export class UsersService {
         throw new ConflictException("Login ID already exists");
       }
     }
+
+    // Store the original password before hashing (for email)
+    const plainPassword = dto.password;
 
     // 2. Hash Password
     const hashedPassword = await bcrypt.hash(dto.password, 10);
@@ -57,6 +64,15 @@ export class UsersService {
           // NEVER select password
         },
       });
+
+      // 4. Send welcome email with credentials
+      await this.mailService.sendUserCreatedEmail(
+        user.email,
+        user.name || "User",
+        user.loginId,
+        plainPassword,
+        user.role,
+      );
 
       return user;
     } catch (error) {

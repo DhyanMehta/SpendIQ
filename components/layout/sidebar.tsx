@@ -7,15 +7,14 @@ import {
   PieChart,
   Receipt,
   Settings,
-  Wallet,
   LogOut,
   HelpCircle,
   Menu,
   ChevronLeft,
   ShoppingCart,
   FileText,
-  Package,
   UserPlus,
+  Building2,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -28,8 +27,6 @@ const sidebarItems = [
   { icon: Receipt, label: "Transactions", href: "/dashboard/transactions" },
   { icon: ShoppingCart, label: "Sales", href: "/dashboard/sale/order" },
   { icon: FileText, label: "Invoices", href: "/dashboard/sale/invoice" },
-  { icon: Package, label: "Products", href: "/dashboard/products" },
-  { icon: Wallet, label: "Wallet", href: "/dashboard/budgets" },
   { icon: PieChart, label: "Analytics", href: "/dashboard/analytics" },
   { icon: UserPlus, label: "Users", href: "/dashboard/admin/users/create" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
@@ -77,7 +74,7 @@ export function Sidebar({
           )}
         >
           <div className="h-10 w-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
-            <span className="font-bold text-xl">S</span>
+            <Building2 className="h-5 w-5" />
           </div>
           {!isCollapsed && (
             <span className="font-bold text-xl text-foreground tracking-tight">
