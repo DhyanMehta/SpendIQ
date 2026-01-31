@@ -16,12 +16,18 @@ import { Role } from "@prisma/client";
 @Controller("portal")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PortalController {
-  constructor(private readonly portalService: PortalService) { }
+  constructor(private readonly portalService: PortalService) {}
 
   @Get("dashboard")
   @Roles(Role.PORTAL_USER, Role.ADMIN)
   getDashboard(@Request() req) {
     return this.portalService.getDashboardData(req.user.id);
+  }
+
+  @Get("profile")
+  @Roles(Role.PORTAL_USER, Role.ADMIN)
+  getProfile(@Request() req) {
+    return this.portalService.getProfile(req.user.id);
   }
 
   @Get("invoices")

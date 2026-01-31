@@ -33,6 +33,48 @@ export class PortalService {
     return user?.contact?.id || null;
   }
 
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        contact: {
+          include: {
+            tags: {
+              include: {
+                tag: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user || !user.contact) {
+      return null;
+    }
+
+    return {
+      id: user.contact.id,
+      name: user.contact.name,
+      email: user.contact.email,
+      phone: user.contact.phone,
+      type: user.contact.type,
+      imageUrl: user.contact.imageUrl,
+      address: {
+        street: user.contact.street,
+        city: user.contact.city,
+        state: user.contact.state,
+        country: user.contact.country,
+        pincode: user.contact.pincode,
+      },
+      tags: user.contact.tags.map((ct) => ({
+        id: ct.tag.id,
+        name: ct.tag.name,
+        color: ct.tag.color,
+      })),
+    };
+  }
+
   async getDashboardData(userId: string) {
     const contactId = await this.getContactId(userId);
 
@@ -55,11 +97,11 @@ export class PortalService {
     });
 
     const outstandingInvoices = invoices.filter(
-      (inv) => inv.paymentState !== "PAID"
+      (inv) => inv.paymentState !== "PAID",
     );
     const outstandingBalance = outstandingInvoices.reduce(
       (sum, inv) => sum + Number(inv.totalAmount),
-      0
+      0,
     );
 
     // Get PO count
