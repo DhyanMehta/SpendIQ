@@ -180,8 +180,8 @@ export default function PurchaseOrderForm({ id }: PurchaseOrderFormProps) {
   };
 
   const handleCreateVendorBill = () => {
-    // Navigate to invoice creation with PO context
-    router.push(`/dashboard/sale/invoice/create?poId=${id}`);
+    // Navigate to vendor bill creation with PO context
+    router.push(`/dashboard/purchase/bill/create?poId=${id}`);
   };
 
   if (isEditMode && isLoadingPO) {

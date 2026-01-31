@@ -12,6 +12,8 @@ import { AccountingModule } from "./modules/accounting/accounting.module";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { PurchaseOrdersModule } from "./modules/purchase/purchase-orders.module";
 // import { AnalyticsModule } from "./modules/analytics/analytics.module"; // Temporarily disabled - Budget model needs to be updated
+import { VendorBillsModule } from "./modules/vendor-bills/vendor-bills.module";
+import { PaymentsModule } from "./modules/payments/payments.module";
 
 @Module({
   imports: [
@@ -27,6 +29,8 @@ import { PurchaseOrdersModule } from "./modules/purchase/purchase-orders.module"
     DashboardModule,
     PurchaseOrdersModule,
     // AnalyticsModule, // Temporarily disabled - Budget model needs to be updated
+    VendorBillsModule,
+    PaymentsModule,
   ],
   controllers: [],
   providers: [],

@@ -68,11 +68,11 @@ export default function PaymentsPage() {
   };
 
   const handleRowClick = (id: string) => {
-    router.push(`/dashboard/purchase/payment/${id}`);
+    router.push(`/dashboard/purchase/payments/${id}`);
   };
 
   const handleCreateNew = () => {
-    router.push("/dashboard/purchase/payment/create");
+    router.push("/dashboard/purchase/payments/create");
   };
 
   const resetFilters = () => {
