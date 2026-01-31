@@ -8,13 +8,14 @@ interface RequestOptions {
   body?: any;
   headers?: Record<string, string>;
   token?: string;
+  skipAuthRedirect?: boolean;
 }
 
 export async function apiRequest(
   endpoint: string,
   options: RequestOptions = {},
 ) {
-  const { method = "GET", body, headers = {} } = options;
+  const { method = "GET", body, headers = {}, skipAuthRedirect = false } = options;
 
   let token = options.token;
   if (!token && typeof window !== "undefined") {
@@ -34,10 +35,14 @@ export async function apiRequest(
   try {
     const response = await fetch(`${API_BASE_URL}${endpoint}`, config);
 
-    // Handle 401 Unauthorized globally if needed (e.g., redirect to login)
-    if (response.status === 401 && typeof window !== "undefined") {
-      window.location.href = "/login";
-      return;
+    // Handle 401 Unauthorized globally (redirect to login) unless skipAuthRedirect is true
+    if (response.status === 401 && typeof window !== "undefined" && !skipAuthRedirect) {
+      // Don't redirect for auth routes (login, register, etc.)
+      const isAuthRoute = endpoint.startsWith("/auth/");
+      if (!isAuthRoute) {
+        window.location.href = "/login";
+        return;
+      }
     }
 
     if (!response.ok) {
