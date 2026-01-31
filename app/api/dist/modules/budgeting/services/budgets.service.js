@@ -12,7 +12,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.BudgetsService = void 0;
 const common_1 = require("@nestjs/common");
 const prisma_service_1 = require("../../../common/database/prisma.service");
-const client_1 = require("@prisma/client");
+const library_1 = require("@prisma/client/runtime/library");
+var BudgetStatus;
+(function (BudgetStatus) {
+    BudgetStatus["DRAFT"] = "DRAFT";
+    BudgetStatus["CONFIRMED"] = "CONFIRMED";
+    BudgetStatus["REVISED"] = "REVISED";
+    BudgetStatus["ARCHIVED"] = "ARCHIVED";
+})(BudgetStatus || (BudgetStatus = {}));
 let BudgetsService = class BudgetsService {
     constructor(prisma) {
         this.prisma = prisma;
@@ -21,50 +28,61 @@ let BudgetsService = class BudgetsService {
         return this.prisma.budget.create({
             data: {
                 name: dto.name,
-                fiscalYear: dto.fiscalYear,
-                departmentId: dto.departmentId,
+                startDate: new Date(dto.startDate),
+                endDate: new Date(dto.endDate),
+                analyticAccountId: dto.analyticAccountId,
+                budgetType: dto.budgetType,
+                budgetedAmount: new library_1.Decimal(dto.budgetedAmount),
                 createdBy: userId,
-                status: client_1.BudgetStatus.DRAFT,
-                lines: {
-                    create: dto.lines.map((line) => ({
-                        productId: line.productId,
-                        description: line.description,
-                        plannedAmount: line.plannedAmount,
-                    })),
-                },
-            },
-            include: { lines: true },
-        });
-    }
-    async findAll(status, departmentId) {
-        const budgets = await this.prisma.budget.findMany({
-            where: {
-                status: status ? status : undefined,
-                departmentId: departmentId ? departmentId : undefined,
-                nextVersion: null,
+                status: BudgetStatus.DRAFT,
             },
             include: {
-                department: true,
-                lines: true,
+                analyticAccount: true,
+                creator: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    },
+                },
+            },
+        });
+    }
+    async findAll(status, analyticAccountId, userId) {
+        const budgets = await this.prisma.budget.findMany({
+            where: {
+                status: status,
+                analyticAccountId: analyticAccountId || undefined,
+                createdBy: userId || undefined,
+            },
+            include: {
+                analyticAccount: true,
+                creator: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    },
+                },
             },
             orderBy: { createdAt: "desc" },
         });
-        return budgets.map((budget) => {
-            var _a;
-            const allocated = budget.lines.reduce((sum, line) => sum + Number(line.plannedAmount), 0);
-            const spent = 0;
-            return Object.assign(Object.assign({}, budget), { allocated,
-                spent, department: ((_a = budget.department) === null || _a === void 0 ? void 0 : _a.name) || null });
-        });
+        return budgets;
     }
     async findOne(id) {
         const budget = await this.prisma.budget.findUnique({
             where: { id },
             include: {
-                lines: { include: { product: true } },
-                department: true,
-                previousVersion: true,
-                nextVersion: true,
+                analyticAccount: true,
+                creator: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
+                    },
+                },
+                revisionOf: true,
+                revisedBy: true,
             },
         });
         if (!budget)
@@ -74,59 +92,58 @@ let BudgetsService = class BudgetsService {
     async approve(id) {
         return this.prisma.budget.update({
             where: { id },
-            data: { status: client_1.BudgetStatus.APPROVED },
+            data: { status: BudgetStatus.CONFIRMED },
         });
     }
     async update(id, dto) {
         const existingBudget = await this.findOne(id);
-        if (existingBudget.status !== client_1.BudgetStatus.DRAFT) {
-            throw new common_1.BadRequestException("Can only update draft budgets. Use revise endpoint for approved budgets.");
+        if (existingBudget.status !== BudgetStatus.DRAFT) {
+            throw new common_1.BadRequestException("Can only update draft budgets. Use revise endpoint for confirmed budgets.");
         }
-        return this.prisma.$transaction(async (tx) => {
-            await tx.budgetLine.deleteMany({
-                where: { budgetId: id },
-            });
-            return tx.budget.update({
-                where: { id },
-                data: {
-                    name: dto.name,
-                    fiscalYear: dto.fiscalYear,
-                    departmentId: dto.departmentId,
-                    lines: {
-                        create: dto.lines.map((line) => ({
-                            productId: line.productId,
-                            description: line.description,
-                            plannedAmount: line.plannedAmount,
-                        })),
+        return this.prisma.budget.update({
+            where: { id },
+            data: {
+                name: dto.name,
+                startDate: new Date(dto.startDate),
+                endDate: new Date(dto.endDate),
+                analyticAccountId: dto.analyticAccountId,
+                budgetType: dto.budgetType,
+                budgetedAmount: new library_1.Decimal(dto.budgetedAmount),
+            },
+            include: {
+                analyticAccount: true,
+                creator: {
+                    select: {
+                        id: true,
+                        name: true,
+                        email: true,
                     },
                 },
-                include: { lines: true },
-            });
+            },
         });
     }
     async createRevision(id, userId, dto) {
         const oldBudget = await this.findOne(id);
-        if (oldBudget.status !== client_1.BudgetStatus.APPROVED) {
-            throw new common_1.BadRequestException("Can only revise approved budgets. Edit the draft directly.");
+        if (oldBudget.status !== BudgetStatus.CONFIRMED) {
+            throw new common_1.BadRequestException("Can only revise confirmed budgets. Edit the draft directly.");
         }
         return this.prisma.$transaction(async (tx) => {
             const newBudget = await tx.budget.create({
                 data: {
-                    name: dto.name,
-                    fiscalYear: dto.fiscalYear,
-                    departmentId: dto.departmentId,
+                    name: `${dto.name} (Rev ${new Date().toLocaleDateString()})`,
+                    startDate: new Date(dto.startDate),
+                    endDate: new Date(dto.endDate),
+                    analyticAccountId: dto.analyticAccountId,
+                    budgetType: dto.budgetType,
+                    budgetedAmount: new library_1.Decimal(dto.budgetedAmount),
                     createdBy: userId,
-                    status: client_1.BudgetStatus.DRAFT,
-                    version: oldBudget.version + 1,
-                    previousVersionId: oldBudget.id,
-                    lines: {
-                        create: dto.lines.map((line) => ({
-                            productId: line.productId,
-                            description: line.description,
-                            plannedAmount: line.plannedAmount,
-                        })),
-                    },
+                    status: BudgetStatus.DRAFT,
+                    revisionOfId: oldBudget.id,
                 },
+            });
+            await tx.budget.update({
+                where: { id: oldBudget.id },
+                data: { status: BudgetStatus.REVISED },
             });
             return newBudget;
         });

@@ -58,11 +58,13 @@ export declare class AnalyticalAccountsService {
             name: string;
             createdAt: Date;
             updatedAt: Date;
-            fiscalYear: number;
+            analyticAccountId: string;
+            budgetedAmount: import("@prisma/client/runtime/library").Decimal;
+            startDate: Date;
+            endDate: Date;
+            budgetType: import(".prisma/client").$Enums.BudgetType;
             status: import(".prisma/client").$Enums.BudgetStatus;
-            version: number;
-            departmentId: string | null;
-            previousVersionId: string | null;
+            revisionOfId: string | null;
             createdBy: string;
         }[];
     } & {

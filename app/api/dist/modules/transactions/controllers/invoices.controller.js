@@ -20,18 +20,19 @@ const client_1 = require("@prisma/client");
 const jwt_auth_guard_1 = require("../../../common/auth/jwt-auth.guard");
 const roles_guard_1 = require("../../../common/guards/roles.guard");
 const roles_decorator_1 = require("../../../common/decorators/roles.decorator");
+const current_user_decorator_1 = require("../../../common/decorators/current-user.decorator");
 let InvoicesController = class InvoicesController {
     constructor(invoicesService) {
         this.invoicesService = invoicesService;
     }
-    create(dto) {
-        return this.invoicesService.create(dto);
+    create(dto, user) {
+        return this.invoicesService.create(dto, user.id);
     }
-    post(id) {
-        return this.invoicesService.post(id);
+    post(id, user) {
+        return this.invoicesService.post(id, user.id);
     }
-    findAll(type, partnerId) {
-        return this.invoicesService.findAll(type, partnerId);
+    findAll(type, partnerId, user) {
+        return this.invoicesService.findAll(type, partnerId, user.id);
     }
     findOne(id) {
         return this.invoicesService.findOne(id);
@@ -42,24 +43,27 @@ __decorate([
     (0, common_1.Post)(),
     (0, roles_decorator_1.Roles)(client_1.Role.ADMIN),
     __param(0, (0, common_1.Body)()),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [create_invoice_dto_1.CreateInvoiceDto]),
+    __metadata("design:paramtypes", [create_invoice_dto_1.CreateInvoiceDto, Object]),
     __metadata("design:returntype", void 0)
 ], InvoicesController.prototype, "create", null);
 __decorate([
     (0, common_1.Patch)(":id/post"),
     (0, roles_decorator_1.Roles)(client_1.Role.ADMIN),
     __param(0, (0, common_1.Param)("id")),
+    __param(1, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [String, Object]),
     __metadata("design:returntype", void 0)
 ], InvoicesController.prototype, "post", null);
 __decorate([
     (0, common_1.Get)(),
     __param(0, (0, common_1.Query)("type")),
     __param(1, (0, common_1.Query)("partnerId")),
+    __param(2, (0, current_user_decorator_1.CurrentUser)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [String, String, Object]),
     __metadata("design:returntype", void 0)
 ], InvoicesController.prototype, "findAll", null);
 __decorate([

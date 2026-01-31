@@ -7,7 +7,7 @@ import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   @Post("send-otp")
   async sendOtp(@Body() body: SendOtpDto) {
@@ -29,5 +29,12 @@ export class AuthController {
   @Get("profile")
   async getProfile(@Request() req: any) {
     return this.authService.getProfile(req.user.id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post("reset-password")
+  @HttpCode(HttpStatus.OK)
+  async resetPassword(@Request() req: any) {
+    return this.authService.resetMyPassword(req.user.id);
   }
 }

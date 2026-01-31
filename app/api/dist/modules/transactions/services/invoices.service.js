@@ -19,7 +19,7 @@ let InvoicesService = class InvoicesService {
         this.prisma = prisma;
         this.journalEntriesService = journalEntriesService;
     }
-    async create(dto) {
+    async create(dto, userId) {
         let totalAmount = 0;
         const linesData = dto.lines.map((line) => {
             const subtotal = line.quantity * line.priceUnit;
@@ -36,8 +36,9 @@ let InvoicesService = class InvoicesService {
         return this.prisma.invoice.create({
             data: {
                 number: dto.number,
+                creator: userId ? { connect: { id: userId } } : undefined,
                 type: dto.type,
-                partnerId: dto.partnerId,
+                partner: { connect: { id: dto.partnerId } },
                 date: new Date(dto.date),
                 dueDate: new Date(dto.dueDate),
                 status: client_1.InvoiceStatus.DRAFT,
@@ -47,11 +48,12 @@ let InvoicesService = class InvoicesService {
             include: { lines: true },
         });
     }
-    async findAll(type, partnerId) {
+    async findAll(type, partnerId, userId) {
         return this.prisma.invoice.findMany({
             where: {
                 type: type ? type : undefined,
                 partnerId: partnerId ? partnerId : undefined,
+                createdById: userId || undefined,
             },
             include: { partner: true },
             orderBy: { date: "desc" },
@@ -69,7 +71,7 @@ let InvoicesService = class InvoicesService {
             throw new common_1.NotFoundException("Invoice not found");
         return invoice;
     }
-    async post(id) {
+    async post(id, userId) {
         const invoice = await this.findOne(id);
         if (invoice.status === client_1.InvoiceStatus.POSTED) {
             throw new common_1.BadRequestException("Invoice already posted");
@@ -105,7 +107,7 @@ let InvoicesService = class InvoicesService {
             date: invoice.date,
             reference: invoice.number || `INV/${invoice.id}`,
             lines: lines,
-        });
+        }, userId);
         return this.prisma.invoice.update({
             where: { id },
             data: {

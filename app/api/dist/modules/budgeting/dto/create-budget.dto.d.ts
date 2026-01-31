@@ -1,11 +1,12 @@
-export declare class CreateBudgetLineDto {
-    productId?: string;
-    description?: string;
-    plannedAmount: number;
+export declare enum BudgetType {
+    INCOME = "INCOME",
+    EXPENSE = "EXPENSE"
 }
 export declare class CreateBudgetDto {
     name: string;
-    fiscalYear: number;
-    departmentId?: string;
-    lines: CreateBudgetLineDto[];
+    startDate: string;
+    endDate: string;
+    analyticAccountId: string;
+    budgetType: BudgetType;
+    budgetedAmount: number;
 }

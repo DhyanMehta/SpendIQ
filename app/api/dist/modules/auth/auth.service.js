@@ -59,59 +59,154 @@ const jwt_1 = require("@nestjs/jwt");
 const prisma_service_1 = require("../../common/database/prisma.service");
 const bcrypt = __importStar(require("bcrypt"));
 const client_1 = require("@prisma/client");
+const mail_service_1 = require("../mail/mail.service");
 let AuthService = class AuthService {
-    constructor(prisma, jwtService) {
+    constructor(prisma, jwtService, mailService) {
         this.prisma = prisma;
         this.jwtService = jwtService;
+        this.mailService = mailService;
+    }
+    async sendOtp(email) {
+        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        const expiresAt = new Date(Date.now() + 10 * 60 * 1000);
+        await this.prisma.otpVerification.deleteMany({ where: { email } });
+        await this.prisma.otpVerification.create({
+            data: {
+                email,
+                otp,
+                expiresAt,
+            },
+        });
+        this.mailService.sendOtpEmail(email, otp).catch((error) => {
+            console.error("[AuthService] Failed to send OTP email:", error);
+        });
+        const isDevelopment = process.env.NODE_ENV === "development";
+        if (isDevelopment) {
+            return {
+                message: "OTP sent successfully",
+                otp,
+                note: "⚠️ OTP included in response because NODE_ENV=development. Remove in production!",
+            };
+        }
+        return { message: "OTP sent successfully" };
     }
     async register(registerDto) {
-        console.log("[AuthService] Registering user:", registerDto.email);
-        const existingUser = await this.prisma.user.findUnique({
+        console.log("[AuthService] Registering user:", registerDto.loginId);
+        if (!registerDto.otp) {
+            throw new common_1.UnauthorizedException("OTP is required");
+        }
+        const otpRecord = await this.prisma.otpVerification.findFirst({
+            where: { email: registerDto.email, otp: registerDto.otp },
+        });
+        if (!otpRecord) {
+            throw new common_1.UnauthorizedException("Wrong OTP. Please check the code and try again.");
+        }
+        if (otpRecord.expiresAt < new Date()) {
+            throw new common_1.UnauthorizedException("OTP has expired. Please request a new code.");
+        }
+        const existingLoginId = await this.prisma.user.findUnique({
+            where: { loginId: registerDto.loginId },
+        });
+        if (existingLoginId) {
+            throw new common_1.ConflictException("Login ID already in use");
+        }
+        const existingEmail = await this.prisma.user.findUnique({
             where: { email: registerDto.email },
         });
-        console.log("[AuthService] Existing user check:", existingUser);
-        if (existingUser) {
+        if (existingEmail) {
             throw new common_1.ConflictException("Email already in use");
         }
         const hashedPassword = await bcrypt.hash(registerDto.password, 10);
         const user = await this.prisma.user.create({
             data: {
+                loginId: registerDto.loginId,
                 email: registerDto.email,
                 password: hashedPassword,
                 name: registerDto.name,
                 role: client_1.Role.ADMIN,
             },
         });
+        await this.prisma.otpVerification.delete({
+            where: { id: otpRecord.id },
+        });
         const { password } = user, result = __rest(user, ["password"]);
         return result;
     }
     async login(loginDto) {
         const user = await this.prisma.user.findUnique({
-            where: { email: loginDto.email },
+            where: { loginId: loginDto.loginId },
         });
+        const invalidCredsError = new common_1.UnauthorizedException("Invalid Login Id or Password");
         if (!user) {
-            throw new common_1.UnauthorizedException("Invalid credentials");
+            throw invalidCredsError;
         }
         const isPasswordValid = await bcrypt.compare(loginDto.password, user.password);
         if (!isPasswordValid) {
-            throw new common_1.UnauthorizedException("Invalid credentials");
+            throw invalidCredsError;
         }
         const payload = { sub: user.id, email: user.email, role: user.role };
         return {
             access_token: this.jwtService.sign(payload),
             user: {
                 id: user.id,
+                loginId: user.loginId,
                 email: user.email,
                 name: user.name,
                 role: user.role,
             },
         };
     }
+    async getProfile(userId) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+            select: {
+                id: true,
+                loginId: true,
+                email: true,
+                name: true,
+                role: true,
+                createdAt: true,
+                updatedAt: true,
+            },
+        });
+        if (!user) {
+            throw new common_1.UnauthorizedException("User not found");
+        }
+        return user;
+    }
+    async resetMyPassword(userId) {
+        const user = await this.prisma.user.findUnique({
+            where: { id: userId },
+        });
+        if (!user) {
+            throw new common_1.UnauthorizedException("User not found");
+        }
+        const newPassword = this.generateRandomPassword();
+        const hashedPassword = await bcrypt.hash(newPassword, 10);
+        await this.prisma.user.update({
+            where: { id: userId },
+            data: { password: hashedPassword },
+        });
+        await this.mailService.sendPasswordResetEmail(user.email, user.name || "User", user.loginId, newPassword);
+        return {
+            success: true,
+            message: "A new password has been sent to your email address",
+        };
+    }
+    generateRandomPassword() {
+        const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$";
+        let password = "";
+        for (let i = 0; i < 12; i++) {
+            password += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return password;
+    }
 };
 exports.AuthService = AuthService;
 exports.AuthService = AuthService = __decorate([
     (0, common_1.Injectable)(),
     __metadata("design:paramtypes", [prisma_service_1.PrismaService,
-        jwt_1.JwtService])
+        jwt_1.JwtService,
+        mail_service_1.MailService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

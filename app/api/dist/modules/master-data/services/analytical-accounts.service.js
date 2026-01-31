@@ -33,7 +33,7 @@ let AnalyticalAccountsService = class AnalyticalAccountsService {
             include: {
                 parent: true,
                 children: true,
-                budgets: { take: 5, orderBy: { fiscalYear: "desc" } },
+                budgets: { take: 5, orderBy: { createdAt: "desc" } },
             },
         });
     }

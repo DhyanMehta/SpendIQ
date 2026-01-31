@@ -20,11 +20,24 @@ __decorate([
 ], RegisterDto.prototype, "email", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.MinLength)(6),
+    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.Length)(6, 12, { message: "Login ID must be between 6 and 12 characters" }),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "loginId", void 0);
+__decorate([
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.Length)(9, 50, { message: "Password must be more than 8 characters" }),
+    (0, class_validator_1.Matches)(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\W).*$/, {
+        message: "Password must contain a lowercase letter, an uppercase letter, and a special character",
+    }),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "password", void 0);
 __decorate([
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], RegisterDto.prototype, "name", void 0);
+__decorate([
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], RegisterDto.prototype, "otp", void 0);
 //# sourceMappingURL=register.dto.js.map

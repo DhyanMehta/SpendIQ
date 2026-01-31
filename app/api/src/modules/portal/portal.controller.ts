@@ -3,6 +3,7 @@ import {
   Get,
   Post,
   Param,
+  Body,
   UseGuards,
   Request,
 } from "@nestjs/common";
@@ -57,5 +58,26 @@ export class PortalController {
   @Roles(Role.PORTAL_USER)
   payInvoice(@Param("id") id: string, @Request() req) {
     return this.portalService.payInvoice(id, req.user.id);
+  }
+
+  @Post("invoices/:id/verify-payment")
+  @Roles(Role.PORTAL_USER)
+  verifyPayment(
+    @Param("id") id: string,
+    @Body()
+    body: {
+      razorpay_order_id: string;
+      razorpay_payment_id: string;
+      razorpay_signature: string;
+    },
+    @Request() req,
+  ) {
+    return this.portalService.verifyPayment(
+      id,
+      req.user.id,
+      body.razorpay_order_id,
+      body.razorpay_payment_id,
+      body.razorpay_signature,
+    );
   }
 }

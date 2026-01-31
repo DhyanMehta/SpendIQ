@@ -44,6 +44,13 @@ export default function LoginPage() {
     setIsLoading(true);
     setError("");
 
+    // Clear any existing auth cookies/localStorage before login
+    localStorage.removeItem("accessToken");
+    localStorage.removeItem("userName");
+    localStorage.removeItem("userRole");
+    document.cookie = "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+    document.cookie = "userRole=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
     try {
       const data = await apiRequest("/auth/login", {
         method: "POST",

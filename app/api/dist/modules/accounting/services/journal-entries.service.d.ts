@@ -13,17 +13,17 @@ export declare class JournalEntriesService {
             credit: number;
             analyticAccountId?: string;
         }[];
-    }): Promise<{
+    }, userId?: string): Promise<{
         lines: {
             id: string;
             createdAt: Date;
+            partnerId: string | null;
+            analyticAccountId: string | null;
             label: string | null;
             debit: import("@prisma/client/runtime/library").Decimal;
             credit: import("@prisma/client/runtime/library").Decimal;
             reconciled: boolean;
             accountId: string;
-            partnerId: string | null;
-            analyticAccountId: string | null;
             entryId: string;
         }[];
     } & {
@@ -35,8 +35,9 @@ export declare class JournalEntriesService {
         reference: string | null;
         journalId: string | null;
         state: import(".prisma/client").$Enums.EntryState;
+        createdById: string | null;
     }>;
-    findAll(): Promise<({
+    findAll(userId?: string): Promise<({
         lines: ({
             account: {
                 id: string;
@@ -58,13 +59,13 @@ export declare class JournalEntriesService {
         } & {
             id: string;
             createdAt: Date;
+            partnerId: string | null;
+            analyticAccountId: string | null;
             label: string | null;
             debit: import("@prisma/client/runtime/library").Decimal;
             credit: import("@prisma/client/runtime/library").Decimal;
             reconciled: boolean;
             accountId: string;
-            partnerId: string | null;
-            analyticAccountId: string | null;
             entryId: string;
         })[];
     } & {
@@ -76,6 +77,7 @@ export declare class JournalEntriesService {
         reference: string | null;
         journalId: string | null;
         state: import(".prisma/client").$Enums.EntryState;
+        createdById: string | null;
     })[]>;
     findOne(id: string): Promise<{
         lines: ({
@@ -99,13 +101,13 @@ export declare class JournalEntriesService {
         } & {
             id: string;
             createdAt: Date;
+            partnerId: string | null;
+            analyticAccountId: string | null;
             label: string | null;
             debit: import("@prisma/client/runtime/library").Decimal;
             credit: import("@prisma/client/runtime/library").Decimal;
             reconciled: boolean;
             accountId: string;
-            partnerId: string | null;
-            analyticAccountId: string | null;
             entryId: string;
         })[];
     } & {
@@ -117,6 +119,7 @@ export declare class JournalEntriesService {
         reference: string | null;
         journalId: string | null;
         state: import(".prisma/client").$Enums.EntryState;
+        createdById: string | null;
     }>;
     post(id: string): Promise<{
         number: string | null;
@@ -127,5 +130,6 @@ export declare class JournalEntriesService {
         reference: string | null;
         journalId: string | null;
         state: import(".prisma/client").$Enums.EntryState;
+        createdById: string | null;
     }>;
 }

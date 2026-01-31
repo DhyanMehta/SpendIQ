@@ -20,6 +20,7 @@ const client_1 = require("@prisma/client");
 const jwt_auth_guard_1 = require("../../../common/auth/jwt-auth.guard");
 const roles_guard_1 = require("../../../common/guards/roles.guard");
 const roles_decorator_1 = require("../../../common/decorators/roles.decorator");
+const current_user_decorator_1 = require("../../../common/decorators/current-user.decorator");
 let BudgetsController = class BudgetsController {
     constructor(budgetsService) {
         this.budgetsService = budgetsService;
@@ -36,8 +37,8 @@ let BudgetsController = class BudgetsController {
     update(id, dto) {
         return this.budgetsService.update(id, dto);
     }
-    findAll(status, departmentId) {
-        return this.budgetsService.findAll(status, departmentId);
+    findAll(user, status, analyticAccountId) {
+        return this.budgetsService.findAll(status, analyticAccountId, user.id);
     }
     findOne(id) {
         return this.budgetsService.findOne(id);
@@ -82,10 +83,11 @@ __decorate([
 ], BudgetsController.prototype, "update", null);
 __decorate([
     (0, common_1.Get)(),
-    __param(0, (0, common_1.Query)("status")),
-    __param(1, (0, common_1.Query)("departmentId")),
+    __param(0, (0, current_user_decorator_1.CurrentUser)()),
+    __param(1, (0, common_1.Query)("status")),
+    __param(2, (0, common_1.Query)("analyticAccountId")),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, String]),
+    __metadata("design:paramtypes", [Object, String, String]),
     __metadata("design:returntype", void 0)
 ], BudgetsController.prototype, "findAll", null);
 __decorate([

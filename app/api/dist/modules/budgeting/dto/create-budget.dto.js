@@ -9,27 +9,14 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.CreateBudgetDto = exports.CreateBudgetLineDto = void 0;
+exports.CreateBudgetDto = exports.BudgetType = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
-class CreateBudgetLineDto {
-}
-exports.CreateBudgetLineDto = CreateBudgetLineDto;
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateBudgetLineDto.prototype, "productId", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
-    __metadata("design:type", String)
-], CreateBudgetLineDto.prototype, "description", void 0);
-__decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsNumber)(),
-    __metadata("design:type", Number)
-], CreateBudgetLineDto.prototype, "plannedAmount", void 0);
+var BudgetType;
+(function (BudgetType) {
+    BudgetType["INCOME"] = "INCOME";
+    BudgetType["EXPENSE"] = "EXPENSE";
+})(BudgetType || (exports.BudgetType = BudgetType = {}));
 class CreateBudgetDto {
 }
 exports.CreateBudgetDto = CreateBudgetDto;
@@ -39,19 +26,25 @@ __decorate([
     __metadata("design:type", String)
 ], CreateBudgetDto.prototype, "name", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
-    (0, class_validator_1.IsInt)(),
-    __metadata("design:type", Number)
-], CreateBudgetDto.prototype, "fiscalYear", void 0);
-__decorate([
-    (0, class_validator_1.IsOptional)(),
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsDateString)(),
     __metadata("design:type", String)
-], CreateBudgetDto.prototype, "departmentId", void 0);
+], CreateBudgetDto.prototype, "startDate", void 0);
 __decorate([
-    (0, class_validator_1.IsArray)(),
-    (0, class_validator_1.ValidateNested)({ each: true }),
-    (0, class_transformer_1.Type)(() => CreateBudgetLineDto),
-    __metadata("design:type", Array)
-], CreateBudgetDto.prototype, "lines", void 0);
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
+], CreateBudgetDto.prototype, "endDate", void 0);
+__decorate([
+    (0, class_validator_1.IsUUID)(),
+    __metadata("design:type", String)
+], CreateBudgetDto.prototype, "analyticAccountId", void 0);
+__decorate([
+    (0, class_validator_1.IsEnum)(BudgetType),
+    __metadata("design:type", String)
+], CreateBudgetDto.prototype, "budgetType", void 0);
+__decorate([
+    (0, class_transformer_1.Type)(() => Number),
+    (0, class_validator_1.IsNotEmpty)(),
+    (0, class_validator_1.IsNumber)(),
+    __metadata("design:type", Number)
+], CreateBudgetDto.prototype, "budgetedAmount", void 0);
 //# sourceMappingURL=create-budget.dto.js.map

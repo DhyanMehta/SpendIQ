@@ -50,18 +50,8 @@ let DashboardService = class DashboardService {
             select: { date: true, type: true, totalAmount: true },
         });
         const months = [
-            "Jan",
-            "Feb",
-            "Mar",
-            "Apr",
-            "May",
-            "Jun",
-            "Jul",
-            "Aug",
-            "Sep",
-            "Oct",
-            "Nov",
-            "Dec",
+            "Jan", "Feb", "Mar", "Apr", "May", "Jun",
+            "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
         ];
         const groups = {};
         allInvoices.forEach((inv) => {
@@ -86,20 +76,18 @@ let DashboardService = class DashboardService {
             include: { partner: true },
         });
     }
-    async getBudgetUtilization() {
+    async getBudgetUtilization(userId) {
         const budgets = await this.prisma.budget.findMany({
-            include: { lines: true },
+            where: { createdBy: userId },
+            take: 5,
+            orderBy: { createdAt: "desc" },
         });
-        return budgets
-            .map((b) => {
-            const total = b.lines.reduce((sum, line) => sum + Number(line.plannedAmount), 0);
-            return {
-                name: b.name,
-                value: total,
-                color: "#" + Math.floor(Math.random() * 16777215).toString(16),
-            };
-        })
-            .slice(0, 5);
+        const colors = ["#8b5cf6", "#ec4899", "#10b981", "#f59e0b", "#3b82f6"];
+        return budgets.map((b, index) => ({
+            name: b.name,
+            value: Number(b.budgetedAmount),
+            color: colors[index % colors.length],
+        }));
     }
 };
 exports.DashboardService = DashboardService;

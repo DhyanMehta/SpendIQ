@@ -1,9 +1,28 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../common/database/prisma.service";
+import { ConfigService } from "@nestjs/config";
+import Razorpay from "razorpay";
+import * as crypto from "crypto";
 
 @Injectable()
 export class PortalService {
-  constructor(private readonly prisma: PrismaService) { }
+  private razorpay: Razorpay;
+
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly configService: ConfigService,
+  ) {
+    // Initialize Razorpay with credentials from environment
+    const keyId = this.configService.get<string>("RAZORPAY_KEY_ID");
+    const keySecret = this.configService.get<string>("RAZORPAY_KEY_SECRET");
+
+    if (keyId && keySecret) {
+      this.razorpay = new Razorpay({
+        key_id: keyId,
+        key_secret: keySecret,
+      });
+    }
+  }
 
   private async getContactId(userId: string): Promise<string | null> {
     const user = await this.prisma.user.findUnique({
@@ -294,6 +313,12 @@ export class PortalService {
       return { success: false, message: "No contact linked to user" };
     }
 
+    // Get user and contact info
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: { contact: true },
+    });
+
     // Verify invoice belongs to this contact
     const invoice = await this.prisma.invoice.findFirst({
       where: {
@@ -306,12 +331,132 @@ export class PortalService {
       return { success: false, message: "Invoice not found" };
     }
 
-    // Mark invoice as paid (simplified - real implementation would create payment record)
+    if (invoice.paymentState === "PAID") {
+      return { success: false, message: "Invoice is already paid" };
+    }
+
+    const amount = Number(invoice.totalAmount);
+
+    // Check if Razorpay is configured
+    if (!this.razorpay) {
+      return {
+        success: false,
+        message: "Payment gateway not configured",
+      };
+    }
+
+    try {
+      // Create Razorpay order (amount in paise)
+      const order = await this.razorpay.orders.create({
+        amount: Math.round(amount * 100), // Convert to paise
+        currency: "INR",
+        receipt: `inv_${invoice.number}`,
+        notes: {
+          invoiceId: invoice.id,
+          invoiceNumber: invoice.number,
+          userId: userId,
+          contactId: contactId,
+        },
+      });
+
+      return {
+        success: true,
+        orderId: order.id,
+        amount: amount,
+        amountInPaise: Math.round(amount * 100),
+        currency: "INR",
+        invoiceNumber: invoice.number,
+        keyId: this.configService.get<string>("RAZORPAY_KEY_ID"),
+        prefill: {
+          name: user?.contact?.name || user?.name || "",
+          email: user?.email || "",
+          contact: user?.contact?.phone || "",
+        },
+      };
+    } catch (error: any) {
+      console.error("[PortalService] Razorpay order creation failed:", error);
+      return {
+        success: false,
+        message: "Failed to create payment order",
+      };
+    }
+  }
+
+  async verifyPayment(
+    invoiceId: string,
+    userId: string,
+    razorpayOrderId: string,
+    razorpayPaymentId: string,
+    razorpaySignature: string,
+  ) {
+    const contactId = await this.getContactId(userId);
+
+    if (!contactId) {
+      return { success: false, message: "No contact linked to user" };
+    }
+
+    // Verify invoice belongs to this contact
+    const invoice = await this.prisma.invoice.findFirst({
+      where: {
+        id: invoiceId,
+        partnerId: contactId,
+      },
+    });
+
+    if (!invoice) {
+      return { success: false, message: "Invoice not found" };
+    }
+
+    // Verify Razorpay signature
+    const keySecret = this.configService.get<string>("RAZORPAY_KEY_SECRET");
+    const generatedSignature = crypto
+      .createHmac("sha256", keySecret || "")
+      .update(`${razorpayOrderId}|${razorpayPaymentId}`)
+      .digest("hex");
+
+    if (generatedSignature !== razorpaySignature) {
+      return { success: false, message: "Payment verification failed" };
+    }
+
+    const amount = Number(invoice.totalAmount);
+
+    // Create payment record
+    const paymentRef = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
+
+    const payment = await this.prisma.payment.create({
+      data: {
+        reference: paymentRef,
+        partnerId: contactId,
+        date: new Date(),
+        amount: amount,
+        type: "INBOUND",
+        method: "RAZORPAY",
+        status: "POSTED",
+      },
+    });
+
+    // Create payment allocation linking payment to invoice
+    await this.prisma.paymentAllocation.create({
+      data: {
+        paymentId: payment.id,
+        invoiceId: invoice.id,
+        amount: amount,
+      },
+    });
+
+    // Update invoice payment state to PAID
     await this.prisma.invoice.update({
       where: { id: invoiceId },
       data: { paymentState: "PAID" },
     });
 
-    return { success: true, message: "Payment recorded successfully" };
+    return {
+      success: true,
+      message: "Payment successful",
+      paymentId: payment.id,
+      paymentReference: paymentRef,
+      amountPaid: amount,
+      invoiceNumber: invoice.number,
+    };
   }
 }
