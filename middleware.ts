@@ -32,7 +32,9 @@ export function middleware(request: NextRequest) {
   }
 
   // If accessing login/register with a token, redirect based on role
-  if ((pathname === "/login" || pathname === "/register") && accessToken) {
+  // Note: We allow access to /login so users can re-login with different credentials
+  // The login page will clear old auth state before submitting
+  if (pathname === "/register" && accessToken) {
     if (userRole === "PORTAL_USER") {
       return NextResponse.redirect(new URL("/portal", request.url));
     }

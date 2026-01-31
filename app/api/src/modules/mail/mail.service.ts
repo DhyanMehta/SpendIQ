@@ -400,4 +400,147 @@ export class MailService {
       return { success: false, error: error.message };
     }
   }
+
+  async sendPasswordResetEmail(
+    email: string,
+    name: string,
+    loginId: string,
+    newPassword: string,
+  ) {
+    console.log(
+      `[MailService] 🔑 Password Reset - Email: ${email}, LoginID: ${loginId}, New Password: ${newPassword}`,
+    );
+
+    // Skip sending email if SMTP is not available
+    if (!this.isMailEnabled || !this.transporter) {
+      console.log(
+        `[MailService] 📧 Password reset email skipped (SMTP not available) - credentials logged above`,
+      );
+      return { success: true, skipped: true };
+    }
+
+    try {
+      const info = await this.transporter.sendMail({
+        from: this.configService.get<string>("MAIL_FROM"),
+        to: email,
+        subject: "Your SpendIQ Password Has Been Reset 🔐",
+        html: `
+          <!DOCTYPE html>
+          <html>
+            <head>
+              <style>
+                body {
+                  font-family: Arial, sans-serif;
+                  line-height: 1.6;
+                  color: #333;
+                }
+                .container {
+                  max-width: 600px;
+                  margin: 0 auto;
+                  padding: 20px;
+                  background-color: #f9f9f9;
+                }
+                .header {
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  color: white;
+                  padding: 30px;
+                  text-align: center;
+                  border-radius: 10px 10px 0 0;
+                }
+                .content {
+                  background: white;
+                  padding: 30px;
+                  border-radius: 0 0 10px 10px;
+                }
+                .credentials {
+                  background-color: #f4f4f4;
+                  padding: 20px;
+                  border-radius: 8px;
+                  margin: 20px 0;
+                  border-left: 4px solid #667eea;
+                }
+                .credentials p {
+                  margin: 8px 0;
+                }
+                .credentials code {
+                  background: #fff;
+                  padding: 5px 10px;
+                  border-radius: 4px;
+                  font-size: 14px;
+                  font-family: monospace;
+                }
+                .button {
+                  display: inline-block;
+                  padding: 12px 30px;
+                  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                  color: white;
+                  text-decoration: none;
+                  border-radius: 5px;
+                  margin-top: 20px;
+                }
+                .warning {
+                  background-color: #fff3cd;
+                  border: 1px solid #ffc107;
+                  color: #856404;
+                  padding: 12px;
+                  border-radius: 5px;
+                  margin-top: 20px;
+                }
+                .footer {
+                  text-align: center;
+                  margin-top: 20px;
+                  color: #666;
+                  font-size: 12px;
+                }
+              </style>
+            </head>
+            <body>
+              <div class="container">
+                <div class="header">
+                  <h1>Password Reset</h1>
+                  <p>Your password has been reset</p>
+                </div>
+                <div class="content">
+                  <h2>Hello ${name}! 👋</h2>
+                  <p>Your SpendIQ password has been reset. Here are your new login credentials:</p>
+                  
+                  <div class="credentials">
+                    <p><strong>🔗 Login URL:</strong> <a href="http://localhost:3000/login">http://localhost:3000/login</a></p>
+                    <p><strong>👤 Login ID:</strong> <code>${loginId}</code></p>
+                    <p><strong>📧 Email:</strong> <code>${email}</code></p>
+                    <p><strong>🔑 New Password:</strong> <code>${newPassword}</code></p>
+                  </div>
+                  
+                  <div class="warning">
+                    <strong>⚠️ Security Notice:</strong> Please change your password after logging in for security purposes.
+                  </div>
+                  
+                  <center>
+                    <a href="http://localhost:3000/login" class="button">Login to SpendIQ</a>
+                  </center>
+                  
+                  <p style="margin-top: 30px;">If you did not request this password reset, please contact your administrator immediately.</p>
+                  
+                  <p>Best regards,<br>The SpendIQ Team</p>
+                </div>
+                <div class="footer">
+                  <p>This email was sent to ${email} because a password reset was requested.</p>
+                  <p>&copy; 2026 SpendIQ. All rights reserved.</p>
+                </div>
+              </div>
+            </body>
+          </html>
+        `,
+      });
+
+      console.log(`[MailService] ✅ Password reset email sent to ${email}:`, info.messageId);
+      return { success: true, messageId: info.messageId };
+    } catch (error: any) {
+      console.error(
+        `[MailService] ⚠️ Failed to send password reset email to ${email}. Credentials logged above.`,
+        error,
+      );
+      return { success: false, error: error.message };
+    }
+  }
 }

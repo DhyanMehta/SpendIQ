@@ -285,4 +285,61 @@ export class AuthService {
 
     return user;
   }
+
+  /**
+   * Resets the password for the currently logged-in user
+   *
+   * This method:
+   * 1. Generates a new random temporary password
+   * 2. Hashes it and updates the user's password in database
+   * 3. Sends the new password to the user's email
+   *
+   * @param {string} userId - The UUID of the user requesting password reset
+   * @returns {Promise<{success: boolean, message: string}>}
+   * @throws {UnauthorizedException} If user not found
+   */
+  async resetMyPassword(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!user) {
+      throw new UnauthorizedException("User not found");
+    }
+
+    // Generate a new random password
+    const newPassword = this.generateRandomPassword();
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+
+    // Update password in database
+    await this.prisma.user.update({
+      where: { id: userId },
+      data: { password: hashedPassword },
+    });
+
+    // Send email with new password
+    await this.mailService.sendPasswordResetEmail(
+      user.email,
+      user.name || "User",
+      user.loginId,
+      newPassword,
+    );
+
+    return {
+      success: true,
+      message: "A new password has been sent to your email address",
+    };
+  }
+
+  /**
+   * Generates a random password with 12 characters
+   */
+  private generateRandomPassword(): string {
+    const chars = "ABCDEFGHJKLMNPQRSTUVWXYZabcdefghjkmnpqrstuvwxyz23456789@#$";
+    let password = "";
+    for (let i = 0; i < 12; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    return password;
+  }
 }
