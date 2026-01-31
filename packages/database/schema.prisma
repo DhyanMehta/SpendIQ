@@ -1,0 +1,568 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ============================================================================
+// AUTHENTICATION & ACCESS CONTROL
+// ============================================================================
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String?
+  role      Role     @default(USER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  sessions       Session[]
+  auditLogs      AuditLog[]
+  createdBudgets Budget[]   @relation("BudgetCreator")
+  
+  @@map("users")
+}
+
+enum Role {
+  ADMIN
+  ACCOUNTANT
+  USER
+  CUSTOMER
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  userId    String
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("sessions")
+}
+
+// ============================================================================
+// MASTER DATA
+// ============================================================================
+
+model Contact {
+  id        String      @id @default(uuid())
+  name      String
+  email     String?
+  phone     String?
+  taxId     String?
+  type      ContactType
+  address   String?
+  city      String?
+  country   String?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
+
+  salesOrders     SalesOrder[]
+  purchaseOrders  PurchaseOrder[]
+  invoices        Invoice[]
+  payments        Payment[]
+  journalEntries  JournalEntryLine[]
+
+  @@map("contacts")
+}
+
+enum ContactType {
+  CUSTOMER
+  VENDOR
+  EMPLOYEE
+}
+
+model Product {
+  id          String   @id @default(uuid())
+  name        String
+  code        String?  @unique
+  description String?
+  price       Decimal  @default(0.00) @db.Decimal(10, 2)
+  cost        Decimal  @default(0.00) @db.Decimal(10, 2)
+  type        ProductType
+  
+  categoryId  String?
+  category    ProductCategory? @relation(fields: [categoryId], references: [id])
+
+  invoiceLines InvoiceLine[]
+  budgetLines  BudgetLine[]
+  poLines      PurchaseOrderLine[]
+  soLines      SalesOrderLine[]
+
+  @@map("products")
+}
+
+enum ProductType {
+  GOODS
+  SERVICE
+  CONSUMABLE
+}
+
+model ProductCategory {
+  id          String   @id @default(uuid())
+  name        String
+  parentId    String?
+  parent      ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children    ProductCategory[] @relation("CategoryHierarchy")
+  products    Product[]
+
+  @@map("product_categories")
+}
+
+model AnalyticalAccount {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  parentId    String?
+  parent      AnalyticalAccount?  @relation("AnalyticHierarchy", fields: [parentId], references: [id])
+  children    AnalyticalAccount[] @relation("AnalyticHierarchy")
+  
+  entries     JournalEntryLine[]
+  invoiceLines InvoiceLine[]
+  budgets     Budget[]
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([code])
+  @@map("analytical_accounts")
+}
+
+// General Ledger Account (Required for Double Entry)
+model Account {
+  id          String   @id @default(uuid())
+  code        String   @unique
+  name        String
+  type        AccountType
+  
+  entries     JournalEntryLine[]
+
+  @@map("accounts")
+}
+
+enum AccountType {
+  ASSET
+  LIABILITY
+  EQUITY
+  INCOME
+  EXPENSE
+}
+
+// ============================================================================
+// BUDGETING
+// ============================================================================
+
+model Budget {
+  id                 String   @id @default(uuid())
+  name               String
+  fiscalYear         Int
+  
+  departmentId       String?  // Optional link to analytic account
+  department         AnalyticalAccount? @relation(fields: [departmentId], references: [id])
+
+  status             BudgetStatus @default(DRAFT)
+  version            Int          @default(1)
+  
+  previousVersionId  String?      @unique
+  previousVersion    Budget?      @relation("BudgetHistory", fields: [previousVersionId], references: [id])
+  nextVersion        Budget?      @relation("BudgetHistory")
+
+  lines              BudgetLine[]
+  
+  createdBy          String
+  creator            User         @relation("BudgetCreator", fields: [createdBy], references: [id])
+
+  createdAt          DateTime     @default(now())
+  updatedAt          DateTime     @updatedAt
+
+  @@index([departmentId])
+  @@index([fiscalYear])
+  @@map("budgets")
+}
+
+enum BudgetStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  REJECTED
+  ARCHIVED
+}
+
+model BudgetLine {
+  id              String   @id @default(uuid())
+  budgetId        String
+  budget          Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
+  
+  // A budget line can target a specific product OR just a category/general bucket via string
+  productId       String?
+  product         Product? @relation(fields: [productId], references: [id])
+  
+  description     String?
+  
+  plannedAmount   Decimal  @db.Decimal(15, 2)
+  
+  // Store distributed monthly amounts for granularity (JSONB for flexibility or separate table)
+  // For strict SQL, we might use 12 columns or a sub-table. 
+  // Sticking to total for now, keeping it normalized.
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+
+  @@map("budget_lines")
+}
+
+// ============================================================================
+// TRANSACTIONS (PO, SO, INVOICE)
+// ============================================================================
+
+model PurchaseOrder {
+  id          String   @id @default(uuid())
+  reference   String   @unique // PO-2023-001
+  vendorId    String
+  vendor      Contact  @relation(fields: [vendorId], references: [id])
+  
+  date        DateTime
+  status      PurchOrderStatus @default(DRAFT)
+  
+  totalAmount Decimal  @db.Decimal(15, 2)
+  
+  lines       PurchaseOrderLine[]
+  invoices    Invoice[] // Linked bills
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("purchase_orders")
+}
+
+model PurchaseOrderLine {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       PurchaseOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  
+  quantity    Decimal  @db.Decimal(10, 2)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  subtotal    Decimal  @db.Decimal(15, 2)
+
+  @@map("purchase_order_lines")
+}
+
+enum PurchOrderStatus {
+  DRAFT
+  SENT
+  CONFIRMED
+  RECEIVED
+  BILLED
+  CANCELLED
+}
+
+model SalesOrder {
+  id          String   @id @default(uuid())
+  reference   String   @unique // SO-2023-001
+  customerId  String
+  customer    Contact  @relation(fields: [customerId], references: [id])
+  
+  date        DateTime
+  status      SalesOrderStatus @default(DRAFT)
+  
+  totalAmount Decimal  @db.Decimal(15, 2)
+  
+  lines       SalesOrderLine[]
+  invoices    Invoice[]
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("sales_orders")
+}
+
+model SalesOrderLine {
+  id          String   @id @default(uuid())
+  orderId     String
+  order       SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  
+  productId   String
+  product     Product  @relation(fields: [productId], references: [id])
+  
+  quantity    Decimal  @db.Decimal(10, 2)
+  unitPrice   Decimal  @db.Decimal(10, 2)
+  subtotal    Decimal  @db.Decimal(15, 2)
+
+  @@map("sales_order_lines")
+}
+
+enum SalesOrderStatus {
+  DRAFT
+  SENT
+  CONFIRMED
+  DELIVERED
+  INVOICED
+  CANCELLED
+}
+
+model Invoice {
+  id          String   @id @default(uuid())
+  number      String   @unique // INV-2023-001
+  type        InvoiceType // IN_INVOICE (Vendor Bill), OUT_INVOICE (Customer Invoice)
+  
+  partnerId   String
+  partner     Contact  @relation(fields: [partnerId], references: [id])
+  
+  date        DateTime
+  dueDate     DateTime
+  
+  status      InvoiceStatus @default(DRAFT)
+  paymentState PaymentState @default(NOT_PAID)
+  
+  totalAmount Decimal  @db.Decimal(15, 2)
+  taxAmount   Decimal  @default(0) @db.Decimal(15, 2)
+  
+  lines       InvoiceLine[]
+  payments    PaymentAllocation[]
+  
+  // Links
+  salesOrderId    String?
+  salesOrder      SalesOrder? @relation(fields: [salesOrderId], references: [id])
+  purchaseOrderId String?
+  purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
+  
+  // Accounting Link
+  journalEntryId  String? @unique
+  journalEntry    JournalEntry? @relation(fields: [journalEntryId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
+  @@index([partnerId])
+  @@map("invoices")
+}
+
+enum InvoiceType {
+  OUT_INVOICE // Customer Invoice
+  OUT_REFUND  // Customer Credit Note
+  IN_INVOICE  // Vendor Bill
+  IN_REFUND   // Vendor Credit Note
+}
+
+enum InvoiceStatus {
+  DRAFT
+  POSTED
+  CANCELLED
+}
+
+enum PaymentState {
+  NOT_PAID
+  PARTIAL
+  PAID
+}
+
+model InvoiceLine {
+  id            String   @id @default(uuid())
+  invoiceId     String
+  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  productId     String?
+  product       Product? @relation(fields: [productId], references: [id])
+  label         String
+  
+  quantity      Decimal  @default(1) @db.Decimal(10, 2)
+  priceUnit     Decimal  @db.Decimal(10, 2)
+  taxRate       Decimal  @default(0) @db.Decimal(5, 2)
+  subtotal      Decimal  @db.Decimal(15, 2)
+  
+  // This line links to an Analytic Account for budget tracking
+  analyticAccountId String?
+  analyticAccount   AnalyticalAccount? @relation(fields: [analyticAccountId], references: [id])
+
+  @@map("invoice_lines")
+}
+
+// ============================================================================
+// PAYMENTS & RECONCILIATION
+// ============================================================================
+
+model Payment {
+  id          String   @id @default(uuid())
+  reference   String   @unique
+  partnerId   String
+  partner     Contact  @relation(fields: [partnerId], references: [id])
+  
+  date        DateTime
+  amount      Decimal  @db.Decimal(15, 2)
+  type        PaymentType
+  
+  method      String   // BANK, CASH
+  status      PaymentStatus @default(DRAFT)
+  
+  allocations PaymentAllocation[]
+  
+  // Accounting Link
+  journalEntryId  String? @unique
+  journalEntry    JournalEntry? @relation(fields: [journalEntryId], references: [id])
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("payments")
+}
+
+enum PaymentType {
+  INBOUND  // Customer paying us
+  OUTBOUND // Us paying vendor
+}
+
+enum PaymentStatus {
+  DRAFT
+  POSTED
+  CANCELLED
+}
+
+model PaymentAllocation {
+  id          String   @id @default(uuid())
+  paymentId   String
+  payment     Payment  @relation(fields: [paymentId], references: [id])
+  
+  invoiceId   String
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
+  
+  amount      Decimal  @db.Decimal(15, 2)
+  
+  createdAt   DateTime @default(now())
+
+  @@map("payment_allocations")
+}
+
+// ============================================================================
+// ACCOUNTING CORE
+// ============================================================================
+
+model JournalEntry {
+  id          String   @id @default(uuid())
+  number      String?  @unique
+  date        DateTime
+  reference   String?
+  journalId   String?  // Could be 'Sales', 'Purchase', 'Bank'
+  
+  state       EntryState @default(DRAFT)
+  
+  lines       JournalEntryLine[]
+  
+  // Reverse relations are handled in Invoice/Payment models
+  invoice     Invoice?
+  payment     Payment?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([date])
+  @@map("journal_entries")
+}
+
+enum EntryState {
+  DRAFT
+  POSTED
+  CANCELLED
+}
+
+model JournalEntryLine {
+  id             String   @id @default(uuid())
+  entryId        String
+  entry          JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  
+  accountId      String
+  account        Account      @relation(fields: [accountId], references: [id])
+  
+  partnerId      String?
+  partner        Contact?     @relation(fields: [partnerId], references: [id])
+  
+  label          String?
+  
+  debit          Decimal  @default(0) @db.Decimal(15, 2)
+  credit         Decimal  @default(0) @db.Decimal(15, 2)
+  
+  // Analytic distribution
+  analyticAccountId String?
+  analyticAccount   AnalyticalAccount? @relation(fields: [analyticAccountId], references: [id])
+  
+  reconciled     Boolean  @default(false)
+
+  createdAt      DateTime @default(now())
+
+  @@index([accountId])
+  @@index([analyticAccountId])
+  @@map("journal_entry_lines")
+}
+
+// ============================================================================
+// AUTOMATION & AUDIT
+// ============================================================================
+
+model AutoAnalyticalRule {
+  id          String   @id @default(uuid())
+  name        String
+  priority    Int      @default(0)
+  
+  // The target analytic account to apply
+  targetAccountId String
+  
+  conditions  RuleCondition[]
+  
+  active      Boolean  @default(true)
+  
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@map("auto_analytical_rules")
+}
+
+model RuleCondition {
+  id          String   @id @default(uuid())
+  ruleId      String
+  rule        AutoAnalyticalRule @relation(fields: [ruleId], references: [id], onDelete: Cascade)
+  
+  field       RuleField // VENDOR, PRODUCT_CATEGORY, DESCRIPTION
+  operator    RuleOperator // CONTAINS, EQUALS
+  value       String
+  
+  @@map("rule_conditions")
+}
+
+enum RuleField {
+  VENDOR
+  PRODUCT_CATEGORY
+  DESCRIPTION
+  ACCOUNT
+}
+
+enum RuleOperator {
+  EQUALS
+  CONTAINS
+  STARTS_WITH
+}
+
+model AuditLog {
+  id          String   @id @default(uuid())
+  action      String   // CREATE, UPDATE, DELETE
+  entity      String   // Budget, Payment...
+  entityId    String
+  
+  userId      String?
+  user        User?    @relation(fields: [userId], references: [id])
+  
+  details     Json?    // Before/After state
+  
+  createdAt   DateTime @default(now())
+
+  @@index([entityId])
+  @@map("audit_logs")
+}
