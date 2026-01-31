@@ -2,7 +2,16 @@
 
 import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Save, Mail, Upload, X, Plus } from "lucide-react";
+import {
+  ArrowLeft,
+  Save,
+  Mail,
+  Upload,
+  X,
+  Plus,
+  Eye,
+  EyeOff,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -22,6 +31,11 @@ interface ContactFormData {
   isPortalUser: boolean;
   imageUrl: string;
   tags: string[];
+  // Portal access fields
+  enablePortalAccess: boolean;
+  loginId: string;
+  password: string;
+  confirmPassword: string;
 }
 
 export default function ContactFormPage() {
@@ -35,6 +49,8 @@ export default function ContactFormPage() {
   const [saving, setSaving] = useState(false);
   const [tagInput, setTagInput] = useState("");
   const [imagePreview, setImagePreview] = useState<string | null>(null);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [formData, setFormData] = useState<ContactFormData>({
     name: "",
     email: "",
@@ -48,6 +64,10 @@ export default function ContactFormPage() {
     isPortalUser: false,
     imageUrl: "",
     tags: [],
+    enablePortalAccess: false,
+    loginId: "",
+    password: "",
+    confirmPassword: "",
   });
   const [errors, setErrors] = useState<
     Partial<Record<keyof ContactFormData, string>>
@@ -59,6 +79,13 @@ export default function ContactFormPage() {
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [contactId]);
+
+  // Auto-populate loginId from email when portal access is enabled
+  useEffect(() => {
+    if (formData.enablePortalAccess && formData.email && !formData.loginId) {
+      setFormData((prev) => ({ ...prev, loginId: formData.email }));
+    }
+  }, [formData.enablePortalAccess, formData.email, formData.loginId]);
 
   const fetchContact = async () => {
     try {
@@ -77,6 +104,10 @@ export default function ContactFormPage() {
         isPortalUser: contact.isPortalUser || false,
         imageUrl: contact.imageUrl || "",
         tags: contact.tags?.map((t: any) => t.tag?.name || t.name) || [],
+        enablePortalAccess: false,
+        loginId: "",
+        password: "",
+        confirmPassword: "",
       });
       if (contact.imageUrl) {
         setImagePreview(contact.imageUrl);
@@ -101,6 +132,23 @@ export default function ContactFormPage() {
       newErrors.email = "Email is required";
     } else if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
       newErrors.email = "Invalid email format";
+    }
+
+    // Portal access validation
+    if (!isEdit && formData.enablePortalAccess) {
+      if (!formData.loginId.trim()) {
+        newErrors.loginId = "Login ID is required for portal access";
+      }
+
+      if (!formData.password) {
+        newErrors.password = "Password is required for portal access";
+      } else if (formData.password.length < 8) {
+        newErrors.password = "Password must be at least 8 characters";
+      }
+
+      if (formData.password !== formData.confirmPassword) {
+        newErrors.confirmPassword = "Passwords do not match";
+      }
     }
 
     setErrors(newErrors);
@@ -134,6 +182,12 @@ export default function ContactFormPage() {
       if (formData.pincode) payload.pincode = formData.pincode;
       if (formData.imageUrl) payload.imageUrl = formData.imageUrl;
       if (formData.tags.length > 0) payload.tags = formData.tags;
+
+      // Add portal access credentials for new contacts
+      if (!isEdit && formData.enablePortalAccess) {
+        payload.loginId = formData.loginId;
+        payload.password = formData.password;
+      }
 
       console.log("[ContactForm] Submitting payload:", payload);
 
@@ -365,6 +419,186 @@ export default function ContactFormPage() {
           </CardContent>
         </Card>
 
+        {/* Portal Access - Only for new contacts */}
+        {!isEdit && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Portal Access</CardTitle>
+              <p className="text-sm text-muted-foreground mt-1">
+                Enable portal access to allow this {formData.type.toLowerCase()}{" "}
+                to log in and view their data
+              </p>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Enable Portal Access Toggle */}
+              <div className="flex items-center space-x-2">
+                <input
+                  type="checkbox"
+                  id="enablePortalAccess"
+                  checked={formData.enablePortalAccess}
+                  onChange={(e) =>
+                    handleChange("enablePortalAccess", e.target.checked)
+                  }
+                  className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                />
+                <Label htmlFor="enablePortalAccess" className="cursor-pointer">
+                  Enable portal access for this contact
+                </Label>
+              </div>
+
+              {/* Portal Access Fields - Only shown when enabled */}
+              {formData.enablePortalAccess && (
+                <div className="space-y-4 pt-4 border-t">
+                  <div className="space-y-2">
+                    <Label htmlFor="loginId">
+                      Login ID <span className="text-destructive">*</span>
+                    </Label>
+                    <Input
+                      id="loginId"
+                      value={formData.loginId}
+                      onChange={(e) => handleChange("loginId", e.target.value)}
+                      placeholder="Login ID (defaults to email)"
+                      className={errors.loginId ? "border-destructive" : ""}
+                    />
+                    {errors.loginId && (
+                      <p className="text-sm text-destructive">
+                        {errors.loginId}
+                      </p>
+                    )}
+                    <p className="text-xs text-muted-foreground">
+                      This will be used to log into the portal. Defaults to
+                      email address.
+                    </p>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                      <Label htmlFor="password">
+                        Password <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="password"
+                          type={showPassword ? "text" : "password"}
+                          value={formData.password}
+                          onChange={(e) =>
+                            handleChange("password", e.target.value)
+                          }
+                          placeholder="Enter password"
+                          className={
+                            errors.password
+                              ? "border-destructive pr-10"
+                              : "pr-10"
+                          }
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setShowPassword(!showPassword)}
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                      {errors.password && (
+                        <p className="text-sm text-destructive">
+                          {errors.password}
+                        </p>
+                      )}
+                      {formData.password && (
+                        <div className="space-y-1">
+                          <p className="text-xs text-muted-foreground">
+                            Password strength:
+                          </p>
+                          <div className="flex gap-1">
+                            <div
+                              className={`h-1 flex-1 rounded ${formData.password.length >= 8 ? "bg-green-500" : "bg-gray-300"}`}
+                            />
+                            <div
+                              className={`h-1 flex-1 rounded ${formData.password.length >= 12 && /[A-Z]/.test(formData.password) ? "bg-green-500" : "bg-gray-300"}`}
+                            />
+                            <div
+                              className={`h-1 flex-1 rounded ${formData.password.length >= 12 && /[A-Z]/.test(formData.password) && /[0-9]/.test(formData.password) ? "bg-green-500" : "bg-gray-300"}`}
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground">
+                            {formData.password.length < 8
+                              ? "Weak"
+                              : formData.password.length < 12
+                                ? "Medium"
+                                : /[A-Z]/.test(formData.password) &&
+                                    /[0-9]/.test(formData.password)
+                                  ? "Strong"
+                                  : "Medium"}
+                          </p>
+                        </div>
+                      )}
+                    </div>
+
+                    <div className="space-y-2">
+                      <Label htmlFor="confirmPassword">
+                        Confirm Password{" "}
+                        <span className="text-destructive">*</span>
+                      </Label>
+                      <div className="relative">
+                        <Input
+                          id="confirmPassword"
+                          type={showConfirmPassword ? "text" : "password"}
+                          value={formData.confirmPassword}
+                          onChange={(e) =>
+                            handleChange("confirmPassword", e.target.value)
+                          }
+                          placeholder="Re-enter password"
+                          className={
+                            errors.confirmPassword
+                              ? "border-destructive pr-10"
+                              : "pr-10"
+                          }
+                        />
+                        <button
+                          type="button"
+                          onClick={() =>
+                            setShowConfirmPassword(!showConfirmPassword)
+                          }
+                          className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
+                        >
+                          {showConfirmPassword ? (
+                            <EyeOff className="h-4 w-4" />
+                          ) : (
+                            <Eye className="h-4 w-4" />
+                          )}
+                        </button>
+                      </div>
+                      {errors.confirmPassword && (
+                        <p className="text-sm text-destructive">
+                          {errors.confirmPassword}
+                        </p>
+                      )}
+                      {formData.confirmPassword &&
+                        formData.password === formData.confirmPassword && (
+                          <p className="text-sm text-green-600">
+                            ✓ Passwords match
+                          </p>
+                        )}
+                    </div>
+                  </div>
+
+                  <div className="bg-blue-50 dark:bg-blue-950 border border-blue-200 dark:border-blue-800 rounded-md p-3">
+                    <p className="text-sm text-blue-800 dark:text-blue-200">
+                      <strong>Note:</strong> An email will be sent to{" "}
+                      <strong>{formData.email || "the contact"}</strong> with
+                      their login credentials and portal access instructions.
+                    </p>
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+
         {/* Photo Upload */}
         <Card>
           <CardHeader>
@@ -455,7 +689,8 @@ export default function ContactFormPage() {
               </Button>
             </div>
             <p className="text-xs text-muted-foreground">
-              Press Enter or click Add to create a tag. Tags help categorize contacts.
+              Press Enter or click Add to create a tag. Tags help categorize
+              contacts.
             </p>
           </CardContent>
         </Card>

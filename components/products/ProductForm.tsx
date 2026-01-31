@@ -25,19 +25,10 @@ import {
   useCreateProduct,
   useUpdateProduct,
   useProductCategories,
-  useCreateProductCategory,
 } from "@/lib/hooks/useProducts";
-import { Loader2, Plus } from "lucide-react";
+import { Loader2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from "@/components/ui/dialog";
 
 const productSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -63,22 +54,7 @@ export default function ProductForm({ initialData, id }: ProductFormProps) {
 
   const { mutate: createProduct, isPending: isCreating } = useCreateProduct();
   const { mutate: updateProduct, isPending: isUpdating } = useUpdateProduct();
-  const { mutate: createCategory, isPending: isCreatingCategory } =
-    useCreateProductCategory();
   const { data: categories } = useProductCategories();
-
-  const [newCategoryName, setNewCategoryName] = useState("");
-  const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
-
-  const handleCreateCategory = () => {
-    if (!newCategoryName.trim()) return;
-    createCategory(newCategoryName, {
-      onSuccess: () => {
-        setIsCategoryDialogOpen(false);
-        setNewCategoryName("");
-      },
-    });
-  };
 
   const form = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
@@ -217,62 +193,6 @@ export default function ProductForm({ initialData, id }: ProductFormProps) {
                   </FormItem>
                 )}
               />
-
-              <div className="flex items-end gap-2 mt-2">
-                <Button
-                  type="button"
-                  variant="outline"
-                  className="w-full"
-                  onClick={() => setIsCategoryDialogOpen(true)}
-                >
-                  <Plus className="mr-2 h-4 w-4" />
-                  Create New Category
-                </Button>
-              </div>
-
-              <Dialog
-                open={isCategoryDialogOpen}
-                onOpenChange={setIsCategoryDialogOpen}
-              >
-                <DialogContent>
-                  <DialogHeader>
-                    <DialogTitle>Create Product Category</DialogTitle>
-                    <DialogDescription>
-                      Add a new category to organize your products.
-                    </DialogDescription>
-                  </DialogHeader>
-                  <div className="grid gap-4 py-4">
-                    <div className="grid grid-cols-4 items-center gap-4">
-                      <FormLabel className="text-right">Name</FormLabel>
-                      <Input
-                        id="name"
-                        value={newCategoryName}
-                        onChange={(e) => setNewCategoryName(e.target.value)}
-                        className="col-span-3"
-                      />
-                    </div>
-                  </div>
-                  <DialogFooter>
-                    <Button
-                      type="button"
-                      variant="outline"
-                      onClick={() => setIsCategoryDialogOpen(false)}
-                    >
-                      Cancel
-                    </Button>
-                    <Button
-                      type="button"
-                      onClick={handleCreateCategory}
-                      disabled={isCreatingCategory || !newCategoryName.trim()}
-                    >
-                      {isCreatingCategory && (
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      )}
-                      Create
-                    </Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
             </CardContent>
           </Card>
 

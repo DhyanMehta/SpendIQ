@@ -6,6 +6,7 @@ import {
   IsBoolean,
   IsArray,
   IsUrl,
+  MinLength,
 } from "class-validator";
 import { ContactType } from "@prisma/client";
 
@@ -55,4 +56,13 @@ export class CreateContactDto {
   @IsOptional()
   @IsString()
   imageUrl?: string; // Can be URL or base64 data URL
+
+  @IsOptional()
+  @IsString()
+  loginId?: string; // Portal login ID, defaults to email
+
+  @IsOptional()
+  @IsString()
+  @MinLength(8, { message: "Password must be at least 8 characters" })
+  password?: string; // Portal password
 }
