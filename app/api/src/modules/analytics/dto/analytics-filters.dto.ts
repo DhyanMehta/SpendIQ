@@ -14,10 +14,10 @@ export enum StatusFilter {
 
 export class AnalyticsFiltersDto {
   @IsDateString()
-  startDate: string;
+  startDate!: string;
 
   @IsDateString()
-  endDate: string;
+  endDate!: string;
 
   @IsOptional()
   @IsUUID()

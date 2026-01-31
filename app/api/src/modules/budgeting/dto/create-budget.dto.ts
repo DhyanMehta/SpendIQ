@@ -17,22 +17,22 @@ export enum BudgetType {
 export class CreateBudgetDto {
   @IsNotEmpty()
   @IsString()
-  name: string;
+  name!: string;
 
   @IsDateString()
-  startDate: string;
+  startDate!: string;
 
   @IsDateString()
-  endDate: string;
+  endDate!: string;
 
   @IsUUID()
-  analyticAccountId: string;
+  analyticAccountId!: string;
 
   @IsEnum(BudgetType)
-  budgetType: BudgetType;
+  budgetType!: BudgetType;
 
   @Type(() => Number)
   @IsNotEmpty()
   @IsNumber()
-  budgetedAmount: number;
+  budgetedAmount!: number;
 }

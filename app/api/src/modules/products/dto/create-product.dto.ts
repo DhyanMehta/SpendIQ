@@ -3,7 +3,7 @@ import { Type } from "class-transformer";
 
 export class CreateProductDto {
   @IsString()
-  name: string;
+  name!: string;
 
   @IsOptional()
   @IsString()
@@ -12,12 +12,12 @@ export class CreateProductDto {
   @Type(() => Number)
   @IsDecimal({ decimal_digits: "0,2" })
   @Min(0)
-  salesPrice: number;
+  salesPrice!: number;
 
   @Type(() => Number)
   @IsDecimal({ decimal_digits: "0,2" })
   @Min(0)
-  purchasePrice: number;
+  purchasePrice!: number;
 
   @IsOptional()
   @IsString()

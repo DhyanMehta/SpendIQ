@@ -18,15 +18,15 @@ export class CreateInvoiceLineDto {
 
   @IsNotEmpty()
   @IsString()
-  label: string;
+  label!: string;
 
   @IsNotEmpty()
   @IsNumber()
-  quantity: number;
+  quantity!: number;
 
   @IsNotEmpty()
   @IsNumber()
-  priceUnit: number;
+  priceUnit!: number;
 
   @IsOptional()
   @IsString()
@@ -36,26 +36,26 @@ export class CreateInvoiceLineDto {
 export class CreateInvoiceDto {
   @IsNotEmpty()
   @IsString()
-  number: string;
+  number!: string;
 
   @IsNotEmpty()
   @IsEnum(InvoiceType)
-  type: InvoiceType;
+  type!: InvoiceType;
 
   @IsNotEmpty()
   @IsString()
-  partnerId: string;
+  partnerId!: string;
 
   @IsNotEmpty()
   @IsDateString()
-  date: string;
+  date!: string;
 
   @IsNotEmpty()
   @IsDateString()
-  dueDate: string;
+  dueDate!: string;
 
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => CreateInvoiceLineDto)
-  lines: CreateInvoiceLineDto[];
+  lines!: CreateInvoiceLineDto[];
 }

@@ -1,14 +1,84 @@
+/**
+ * @fileoverview Payments Service - Manages vendor payment lifecycle in SpendIQ
+ *
+ * ============================================================================
+ * LLM INSTRUCTION: DO NOT REMOVE OR MODIFY THESE COMMENTS
+ * When editing this file, preserve all JSDoc comments and add new ones
+ * for any new functions following the same pattern.
+ * ============================================================================
+ *
+ * NAMING CONVENTIONS (see naming.constants.ts):
+ * - External (DTO): vendorId → Internal (DB): partnerId
+ * - External (DTO): paymentDate → Internal (DB): date
+ * - External (DTO): paymentAmount → Internal (DB): amount
+ * - External (DTO): paymentMethod → Internal (DB): method
+ * - External (DTO): allocatedAmount → Internal (DB): amount (on PaymentAllocation)
+ * - External (DTO): billId → Internal (DB): invoiceId (on PaymentAllocation)
+ *
+ * Payment Types:
+ * - OUTBOUND: Vendor payments (we pay money out)
+ * - INBOUND: Customer receipts (we receive money)
+ *
+ * Status Flow:
+ * - DRAFT → POSTED (via postPayment)
+ * - Cannot edit or delete once POSTED
+ *
+ * Allocation Logic:
+ * - Each payment can be split across multiple bills
+ * - Total allocated must equal payment amount
+ * - Cannot allocate more than outstanding on any bill
+ *
+ * @see naming.constants.ts for canonical naming conventions
+ */
+
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../../common/database/prisma.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 
+/**
+ * PaymentsService - Manages vendor payment operations in the SpendIQ application
+ *
+ * Handles the complete payment lifecycle:
+ * - Creating draft payments with bill allocations
+ * - Updating draft payments
+ * - Posting payments to update bill payment states
+ * - Creating accounting journal entries
+ * - Deleting draft payments
+ *
+ * @class
+ */
 @Injectable()
 export class PaymentsService {
+  /**
+   * Creates an instance of PaymentsService
+   *
+   * @param {PrismaService} prisma - Database access service for payment operations
+   */
   constructor(private prisma: PrismaService) { }
 
   /**
-   * Get all payments with pagination and filters
+   * Retrieves paginated list of vendor payments (OUTBOUND type) with optional filters
+   *
+   * Supports filtering by:
+   * - search: Matches payment reference or vendor name
+   * - vendorId: Filter by specific vendor (mapped to partnerId internally)
+   * - startDate/endDate: Date range filter
+   * - status: DRAFT or POSTED
+   *
+   * NAMING MAPPINGS APPLIED:
+   * - params.vendorId → partnerId (database field)
+   *
+   * @param {object} params - Query filters and pagination:
+   *   - page: Page number (1-based, defaults to 1)
+   *   - limit: Items per page (defaults to 10)
+   *   - search: Optional search string for reference or vendor name
+   *   - vendorId: Optional vendor UUID filter (mapped to partnerId)
+   *   - startDate: Optional start of date range (ISO string)
+   *   - endDate: Optional end of date range (ISO string)
+   *   - status: Optional status filter (DRAFT or POSTED)
+   * @returns {Promise<{data: Payment[], pagination: {page, limit, total, totalPages}}>}
+   *          Paginated payment list with metadata
    */
   async findAll(params: {
     page?: number;
@@ -86,7 +156,15 @@ export class PaymentsService {
   }
 
   /**
-   * Get single payment by ID
+   * Retrieves a single payment by ID with all related data
+   *
+   * Includes:
+   * - partner: Vendor contact information
+   * - allocations: Bill allocations with invoice details
+   *
+   * @param {string} id - UUID of the payment to retrieve
+   * @returns {Promise<Payment>} Complete payment with all relations
+   * @throws {NotFoundException} If payment not found
    */
   async findOne(id: string) {
     const payment = await this.prisma.payment.findUnique({
@@ -109,7 +187,14 @@ export class PaymentsService {
   }
 
   /**
-   * Get unpaid bills for a vendor
+   * Retrieves all unpaid or partially paid bills for a specific vendor
+   *
+   * Used to populate the bill selection when creating a new payment.
+   * Only returns POSTED bills with NOT_PAID or PARTIAL payment state.
+   *
+   * @param {string} vendorId - UUID of the vendor (mapped to partnerId internally)
+   * @returns {Promise<Array<{id, number, date, dueDate, amountTotal, paidAmount, outstanding}>>}
+   *          List of unpaid bills with calculated outstanding amounts
    */
   async getUnpaidBills(vendorId: string) {
     // Get all POSTED bills for this vendor that are not fully paid
@@ -149,7 +234,33 @@ export class PaymentsService {
   }
 
   /**
-   * Create draft payment
+   * Creates a new draft payment with bill allocations
+   *
+   * This method performs the following:
+   * 1. Validates vendor exists and is of type VENDOR
+   * 2. Validates total allocated equals payment amount
+   * 3. Validates all bills exist, are POSTED, and belong to the vendor
+   * 4. Validates allocations don't exceed outstanding amounts
+   * 5. Generates unique payment reference (PAY000001 format)
+   * 6. Creates payment in DRAFT status with allocations
+   *
+   * NAMING MAPPINGS APPLIED:
+   * - dto.vendorId → partnerId (database field)
+   * - dto.paymentDate → date (database field)
+   * - dto.paymentAmount → amount (database field)
+   * - dto.paymentMethod → method (database field)
+   * - allocation.billId → invoiceId (database field)
+   * - allocation.allocatedAmount → amount (on PaymentAllocation)
+   *
+   * @param {CreatePaymentDto} dto - Payment creation data containing:
+   *   - vendorId: Partner UUID (mapped to partnerId)
+   *   - paymentDate: Payment date (mapped to date)
+   *   - paymentAmount: Total payment amount (mapped to amount)
+   *   - paymentMethod: Method (CASH, CHECK, BANK_TRANSFER, etc.)
+   *   - allocations: Array of {billId, allocatedAmount} for each bill to pay
+   * @returns {Promise<Payment>} Created payment with partner and allocations
+   * @throws {BadRequestException} If vendor not found, not VENDOR type,
+   *         allocations don't match payment amount, or allocation exceeds outstanding
    */
   async create(dto: CreatePaymentDto) {
     // Validate vendor
@@ -260,7 +371,27 @@ export class PaymentsService {
   }
 
   /**
-   * Update draft payment
+   * Updates an existing draft payment
+   *
+   * Only DRAFT payments can be updated. POSTED payments are immutable.
+   * If allocations are provided, all existing allocations are replaced.
+   *
+   * NAMING MAPPINGS APPLIED:
+   * - dto.paymentDate → date (database field)
+   * - dto.paymentAmount → amount (database field)
+   * - dto.paymentMethod → method (database field)
+   * - allocation.billId → invoiceId (database field)
+   * - allocation.allocatedAmount → amount (on PaymentAllocation)
+   *
+   * @param {string} id - UUID of the payment to update
+   * @param {UpdatePaymentDto} dto - Fields to update:
+   *   - paymentDate: Optional new date
+   *   - paymentAmount: Optional new amount
+   *   - paymentMethod: Optional new method
+   *   - allocations: Optional new allocations (replaces all existing)
+   * @returns {Promise<Payment>} Updated payment with all relations
+   * @throws {NotFoundException} If payment not found
+   * @throws {BadRequestException} If payment is POSTED or allocations don't match amount
    */
   async update(id: string, dto: UpdatePaymentDto) {
     const payment = await this.prisma.payment.findUnique({
@@ -322,7 +453,27 @@ export class PaymentsService {
   }
 
   /**
-   * Post payment (accounting impact)
+   * Posts a payment, creating accounting entries and updating bill payment states
+   *
+   * This is a critical accounting operation that:
+   * 1. Validates payment is in DRAFT status
+   * 2. Validates allocations exist and equal payment amount
+   * 3. Updates payment status to POSTED
+   * 4. Updates each allocated bill's paymentState:
+   *    - PAID: Full amount paid (outstanding <= 0.01)
+   *    - PARTIAL: Some amount paid
+   *    - NOT_PAID: Nothing paid
+   * 5. Creates double-entry journal entry:
+   *    - DEBIT: Accounts Payable (reduce liability)
+   *    - CREDIT: Cash/Bank (reduce asset)
+   *
+   * Once posted, the payment becomes immutable and cannot be edited or deleted.
+   *
+   * @param {string} id - UUID of the payment to post
+   * @returns {Promise<Payment>} Posted payment with all relations
+   * @throws {NotFoundException} If payment not found
+   * @throws {BadRequestException} If payment is already POSTED, has no allocations,
+   *         or allocations don't equal payment amount
    */
   async postPayment(id: string) {
     const payment = await this.prisma.payment.findUnique({
@@ -435,7 +586,19 @@ export class PaymentsService {
   }
 
   /**
-   * Delete draft payment
+   * Deletes a draft payment and its allocations
+   *
+   * Only DRAFT payments can be deleted. POSTED payments are permanent
+   * accounting records and cannot be deleted.
+   *
+   * Cascade behavior:
+   * 1. Deletes all payment allocations first
+   * 2. Then deletes the payment record
+   *
+   * @param {string} id - UUID of the payment to delete
+   * @returns {Promise<{message: string}>} Success confirmation message
+   * @throws {NotFoundException} If payment not found
+   * @throws {BadRequestException} If trying to delete a POSTED payment
    */
   async remove(id: string) {
     const payment = await this.prisma.payment.findUnique({
