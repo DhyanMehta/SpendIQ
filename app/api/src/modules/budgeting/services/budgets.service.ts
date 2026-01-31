@@ -5,7 +5,15 @@ import {
 } from "@nestjs/common";
 import { PrismaService } from "../../../common/database/prisma.service";
 import { CreateBudgetDto } from "../dto/create-budget.dto";
-import { BudgetStatus } from "@prisma/client";
+import { Decimal } from "@prisma/client/runtime/library";
+
+// Local enum until Prisma Client is regenerated
+enum BudgetStatus {
+  DRAFT = "DRAFT",
+  CONFIRMED = "CONFIRMED",
+  REVISED = "REVISED",
+  ARCHIVED = "ARCHIVED",
+}
 
 @Injectable()
 export class BudgetsService {
@@ -15,63 +23,63 @@ export class BudgetsService {
     return this.prisma.budget.create({
       data: {
         name: dto.name,
-        fiscalYear: dto.fiscalYear,
-        departmentId: dto.departmentId,
+        startDate: new Date(dto.startDate),
+        endDate: new Date(dto.endDate),
+        analyticAccountId: dto.analyticAccountId,
+        budgetType: dto.budgetType,
+        budgetedAmount: new Decimal(dto.budgetedAmount),
         createdBy: userId,
         status: BudgetStatus.DRAFT,
-        lines: {
-          create: dto.lines.map((line) => ({
-            productId: line.productId,
-            description: line.description,
-            plannedAmount: line.plannedAmount,
-          })),
+      },
+      include: {
+        analyticAccount: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
         },
       },
-      include: { lines: true },
     });
   }
 
-  async findAll(status?: BudgetStatus, departmentId?: string) {
+  async findAll(status?: string, analyticAccountId?: string) {
     const budgets = await this.prisma.budget.findMany({
       where: {
-        status: status ? status : undefined,
-        departmentId: departmentId ? departmentId : undefined,
-        // Only fetch latest versions (nextVersion is null) if we want current active budgets
-        nextVersion: null,
+        status: status as any,
+        analyticAccountId: analyticAccountId || undefined,
       },
       include: {
-        department: true,
-        lines: true,
+        analyticAccount: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
       },
       orderBy: { createdAt: "desc" },
     });
 
-    // Transform budgets to include calculated fields
-    return budgets.map((budget) => {
-      const allocated = budget.lines.reduce(
-        (sum, line) => sum + Number(line.plannedAmount),
-        0,
-      );
-      // TODO: Calculate actual spent from transactions/journal entries
-      const spent = 0; // Placeholder - implement when transaction tracking is ready
-
-      return {
-        ...budget,
-        allocated,
-        spent,
-        department: budget.department?.name || null,
-      };
-    });
+    return budgets;
   }
 
   async findOne(id: string) {
     const budget = await this.prisma.budget.findUnique({
       where: { id },
       include: {
-        lines: { include: { product: true } },
-        department: true,
-        previousVersion: true,
-        nextVersion: true,
+        analyticAccount: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+        revisionOf: true,
+        revisedBy: true,
       },
     });
     if (!budget) throw new NotFoundException("Budget not found");
@@ -79,84 +87,74 @@ export class BudgetsService {
   }
 
   async approve(id: string) {
-    // Audit log could be triggered here
     return this.prisma.budget.update({
       where: { id },
-      data: { status: BudgetStatus.APPROVED },
+      data: { status: BudgetStatus.CONFIRMED },
     });
   }
 
-  // Update an existing draft budget
   async update(id: string, dto: CreateBudgetDto) {
     const existingBudget = await this.findOne(id);
 
     if (existingBudget.status !== BudgetStatus.DRAFT) {
       throw new BadRequestException(
-        "Can only update draft budgets. Use revise endpoint for approved budgets.",
+        "Can only update draft budgets. Use revise endpoint for confirmed budgets.",
       );
     }
 
-    return this.prisma.$transaction(async (tx) => {
-      // Delete existing lines
-      await tx.budgetLine.deleteMany({
-        where: { budgetId: id },
-      });
-
-      // Update budget with new data and lines
-      return tx.budget.update({
-        where: { id },
-        data: {
-          name: dto.name,
-          fiscalYear: dto.fiscalYear,
-          departmentId: dto.departmentId,
-          lines: {
-            create: dto.lines.map((line) => ({
-              productId: line.productId,
-              description: line.description,
-              plannedAmount: line.plannedAmount,
-            })),
+    return this.prisma.budget.update({
+      where: { id },
+      data: {
+        name: dto.name,
+        startDate: new Date(dto.startDate),
+        endDate: new Date(dto.endDate),
+        analyticAccountId: dto.analyticAccountId,
+        budgetType: dto.budgetType,
+        budgetedAmount: new Decimal(dto.budgetedAmount),
+      },
+      include: {
+        analyticAccount: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
           },
         },
-        include: { lines: true },
-      });
+      },
     });
   }
 
-  // Create a new version of an existing budget
   async createRevision(id: string, userId: string, dto: CreateBudgetDto) {
     const oldBudget = await this.findOne(id);
 
-    if (oldBudget.status !== BudgetStatus.APPROVED) {
+    if (oldBudget.status !== BudgetStatus.CONFIRMED) {
       throw new BadRequestException(
-        "Can only revise approved budgets. Edit the draft directly.",
+        "Can only revise confirmed budgets. Edit the draft directly.",
       );
     }
 
     return this.prisma.$transaction(async (tx) => {
-      // 1. Create new budget version
+      // Create new budget version
       const newBudget = await tx.budget.create({
         data: {
-          name: dto.name,
-          fiscalYear: dto.fiscalYear,
-          departmentId: dto.departmentId,
+          name: `${dto.name} (Rev ${new Date().toLocaleDateString()})`,
+          startDate: new Date(dto.startDate),
+          endDate: new Date(dto.endDate),
+          analyticAccountId: dto.analyticAccountId,
+          budgetType: dto.budgetType,
+          budgetedAmount: new Decimal(dto.budgetedAmount),
           createdBy: userId,
           status: BudgetStatus.DRAFT,
-          version: oldBudget.version + 1,
-          previousVersionId: oldBudget.id,
-          lines: {
-            create: dto.lines.map((line) => ({
-              productId: line.productId,
-              description: line.description,
-              plannedAmount: line.plannedAmount,
-            })),
-          },
+          revisionOfId: oldBudget.id,
         },
       });
 
-      // 2. Mark old budget as archived (or just leave it as history?)
-      // Actually standard practice is to keep it APPROVED until new one is APPROVED.
-      // But typically "Active" flag might be better.
-      // For now, we rely on `nextVersion` relation to find the head.
+      // Mark old budget as REVISED
+      await tx.budget.update({
+        where: { id: oldBudget.id },
+        data: { status: BudgetStatus.REVISED },
+      });
 
       return newBudget;
     });

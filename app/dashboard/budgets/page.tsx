@@ -1,6 +1,11 @@
 "use client";
 
-import Link from "next/link";
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { Plus, Search, Filter } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Card } from "@/components/ui/card";
 import {
   Table,
   TableBody,
@@ -9,176 +14,253 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Search, Filter } from "lucide-react";
-import { Input } from "@/components/ui/input";
+import { fetchBudgets, type Budget } from "@/lib/budgets/api";
+import { formatCurrency, formatPercentage } from "@/lib/budgets/calculations";
+import BudgetChart from "@/components/budgets/BudgetChart";
+import BudgetStatusBadge from "@/components/budgets/BudgetStatusBadge";
 
-import { useEffect, useState } from "react";
-import { apiRequest } from "@/lib/api";
-import { NewBudgetDialog } from "@/components/budgets/new-budget-dialog";
-import { EditBudgetDialog } from "@/components/budgets/edit-budget-dialog";
-import { exportAllBudgetsToCSV } from "@/lib/export-utils";
-
-export default function BudgetListPage() {
-  const [budgets, setBudgets] = useState<any[]>([]);
+export default function BudgetsPage() {
+  const router = useRouter();
+  const [budgets, setBudgets] = useState<Budget[]>([]);
   const [loading, setLoading] = useState(true);
-  const [showNewBudgetDialog, setShowNewBudgetDialog] = useState(false);
-  const [editingBudgetId, setEditingBudgetId] = useState<string | null>(null);
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const [typeFilter, setTypeFilter] = useState<string>("all");
 
-  useEffect(() => {
-    fetchBudgets();
-  }, []);
-
-  const fetchBudgets = async () => {
+  const fetchData = async () => {
     try {
-      const data = await apiRequest("/budgets");
-      if (Array.isArray(data)) {
-        setBudgets(data);
-      }
+      setLoading(true);
+      const filters: any = {};
+
+      if (search) filters.search = search;
+      if (statusFilter !== "all") filters.status = statusFilter;
+      if (typeFilter !== "all") filters.budgetType = typeFilter;
+
+      const response = await fetchBudgets(filters);
+      setBudgets(Array.isArray(response) ? response : response.data || []);
     } catch (error) {
-      console.error("Failed to fetch budgets", error);
+      console.error("Failed to load budgets:", error);
+      setBudgets([]);
     } finally {
       setLoading(false);
     }
   };
 
-  if (loading) return <div>Loading budgets...</div>;
+  useEffect(() => {
+    fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [search, statusFilter, typeFilter]);
+
+  const handleRowClick = (id: string) => {
+    router.push(`/dashboard/budgets/${id}`);
+  };
+
+  const getTypeBadgeColor = (type: string) => {
+    return type === "INCOME"
+      ? "bg-green-100 text-green-800"
+      : "bg-blue-100 text-blue-800";
+  };
+
   return (
-    <div className="space-y-6">
-      <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+    <div className="p-6 space-y-6">
+      {/* Header */}
+      <div className="flex items-center justify-between">
         <div>
-          <h2 className="text-3xl font-bold tracking-tight">Budgets</h2>
-          <p className="text-muted-foreground">
-            Manage and track departmental allocations.
+          <h1 className="text-3xl font-bold tracking-tight">Budget Master</h1>
+          <p className="text-muted-foreground mt-1">
+            Track and manage budgets against actual performance
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            variant="outline"
-            className="w-full sm:w-auto"
-            onClick={() => exportAllBudgetsToCSV(budgets)}
-            disabled={budgets.length === 0}
-          >
-            <Filter className="mr-2 h-4 w-4" /> Export All
-          </Button>
-          <Button
-            className="w-full sm:w-auto"
-            onClick={() => setShowNewBudgetDialog(true)}
-          >
-            <Plus className="mr-2 h-4 w-4" /> New Budget
-          </Button>
-        </div>
+        <Button onClick={() => router.push("/dashboard/budgets/new")}>
+          <Plus className="mr-2 h-4 w-4" />
+          Create Budget
+        </Button>
       </div>
 
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-lg font-medium">
-              Active Budgets
-            </CardTitle>
-            <div className="flex items-center gap-2">
-              <div className="relative w-full sm:w-64">
-                <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
-                <Input placeholder="Search budgets..." className="pl-8" />
-              </div>
-              <Button variant="outline" size="icon">
-                <Filter className="h-4 w-4" />
+      {/* Filters */}
+      <Card className="p-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          {/* Search */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search by budget name..."
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Status Filter */}
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <span className="text-sm text-muted-foreground">Status:</span>
+            <div className="flex gap-2 flex-wrap">
+              <Button
+                variant={statusFilter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter("all")}
+              >
+                All
+              </Button>
+              <Button
+                variant={statusFilter === "DRAFT" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter("DRAFT")}
+              >
+                Draft
+              </Button>
+              <Button
+                variant={statusFilter === "CONFIRMED" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setStatusFilter("CONFIRMED")}
+              >
+                Confirmed
               </Button>
             </div>
           </div>
-        </CardHeader>
-        <CardContent>
+
+          {/* Type Filter */}
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">Type:</span>
+            <div className="flex gap-2">
+              <Button
+                variant={typeFilter === "all" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setTypeFilter("all")}
+              >
+                All
+              </Button>
+              <Button
+                variant={typeFilter === "INCOME" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setTypeFilter("INCOME")}
+              >
+                Income
+              </Button>
+              <Button
+                variant={typeFilter === "EXPENSE" ? "default" : "outline"}
+                size="sm"
+                onClick={() => setTypeFilter("EXPENSE")}
+              >
+                Expense
+              </Button>
+            </div>
+          </div>
+        </div>
+      </Card>
+
+      {/* Table */}
+      <Card>
+        <div className="overflow-x-auto">
           <Table>
-            <TableHeader>
+            <TableHeader className="sticky top-0 bg-background">
               <TableRow>
                 <TableHead>Budget Name</TableHead>
-                <TableHead>Department</TableHead>
-                <TableHead className="text-right">Allocated</TableHead>
-                <TableHead className="text-right">Spent</TableHead>
-                <TableHead className="text-right">Utilization</TableHead>
-                <TableHead className="text-right">Status</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
+                <TableHead>Analytic Account</TableHead>
+                <TableHead>Type</TableHead>
+                <TableHead>Period</TableHead>
+                <TableHead className="text-right">Budgeted</TableHead>
+                <TableHead className="text-right">Achieved</TableHead>
+                <TableHead className="text-right">%</TableHead>
+                <TableHead>Status</TableHead>
+                <TableHead>Progress</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
-              {budgets.map((budget) => {
-                // Ensure number types
-                const spent = Number(budget.spent) || 0;
-                const allocated = Number(budget.allocated) || 0;
-                const utilization =
-                  allocated > 0 ? (spent / allocated) * 100 : 0;
-
-                return (
-                  <TableRow key={budget.id}>
-                    <TableCell className="font-medium">
-                      <Link
-                        href={`/dashboard/budgets/${budget.id}`}
-                        className="hover:underline text-primary"
-                      >
-                        {budget.name}
-                      </Link>
-                    </TableCell>
-                    <TableCell>{budget.department || "General"}</TableCell>
-                    <TableCell className="text-right">
-                      ${allocated.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      ${spent.toLocaleString()}
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <span className="text-xs text-muted-foreground">
-                          {utilization.toFixed(1)}%
-                        </span>
-                        <div className="h-2 w-16 bg-secondary rounded-full overflow-hidden">
-                          <div
-                            className="h-full bg-primary"
-                            style={{ width: `${Math.min(utilization, 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    </TableCell>
-                    <TableCell className="text-right">
-                      <Badge
-                        variant={
-                          budget.status === "Warning" ? "warning" : "default"
-                        }
-                      >
-                        {budget.status}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="text-right">
+              {loading ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-8">
+                    <div className="flex items-center justify-center">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : budgets.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9} className="text-center py-12">
+                    <div className="flex flex-col items-center justify-center text-muted-foreground">
+                      <p className="text-lg font-medium">No budgets found</p>
+                      <p className="text-sm mt-1">
+                        Get started by creating your first budget
+                      </p>
                       <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => setEditingBudgetId(budget.id)}
+                        className="mt-4"
+                        onClick={() => router.push("/dashboard/budgets/new")}
                       >
-                        Edit
+                        <Plus className="mr-2 h-4 w-4" />
+                        Create Budget
                       </Button>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
+                    </div>
+                  </TableCell>
+                </TableRow>
+              ) : (
+                budgets.map((budget) => {
+                  const isOverBudget = budget.isOverBudget || false;
+                  const rowClass = isOverBudget
+                    ? "cursor-pointer hover:bg-red-50 bg-red-50/30 transition-colors"
+                    : "cursor-pointer hover:bg-muted/50 transition-colors";
+
+                  return (
+                    <TableRow
+                      key={budget.id}
+                      className={rowClass}
+                      onClick={() => handleRowClick(budget.id)}
+                    >
+                      <TableCell className="font-medium">
+                        {budget.name}
+                      </TableCell>
+                      <TableCell>
+                        {budget.analyticAccount?.name || "—"}
+                      </TableCell>
+                      <TableCell>
+                        <Badge className={getTypeBadgeColor(budget.budgetType)}>
+                          {budget.budgetType}
+                        </Badge>
+                      </TableCell>
+                      <TableCell className="text-sm text-muted-foreground">
+                        {new Date(budget.startDate).toLocaleDateString()} -{" "}
+                        {new Date(budget.endDate).toLocaleDateString()}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {formatCurrency(budget.budgetedAmount)}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {budget.actualAmount !== undefined
+                          ? formatCurrency(budget.actualAmount)
+                          : "—"}
+                      </TableCell>
+                      <TableCell className="text-right font-mono">
+                        {budget.achievedPercentage !== undefined
+                          ? formatPercentage(budget.achievedPercentage)
+                          : "—"}
+                      </TableCell>
+                      <TableCell>
+                        <BudgetStatusBadge status={budget.status} />
+                      </TableCell>
+                      <TableCell>
+                        {budget.actualAmount !== undefined && (
+                          <BudgetChart
+                            budgeted={budget.budgetedAmount}
+                            actual={budget.actualAmount}
+                          />
+                        )}
+                      </TableCell>
+                    </TableRow>
+                  );
+                })
+              )}
             </TableBody>
           </Table>
-        </CardContent>
+        </div>
       </Card>
 
-      <NewBudgetDialog
-        open={showNewBudgetDialog}
-        onOpenChange={setShowNewBudgetDialog}
-        onSuccess={fetchBudgets}
-      />
-
-      {editingBudgetId && (
-        <EditBudgetDialog
-          open={!!editingBudgetId}
-          onOpenChange={(open) => !open && setEditingBudgetId(null)}
-          budgetId={editingBudgetId}
-          onSuccess={fetchBudgets}
-        />
+      {/* Results Count */}
+      {!loading && budgets.length > 0 && (
+        <div className="text-sm text-muted-foreground text-center">
+          Showing {budgets.length} budget{budgets.length !== 1 ? "s" : ""}
+        </div>
       )}
     </div>
   );

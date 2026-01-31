@@ -116,7 +116,6 @@ model Product {
   defaultAnalyticAccount   AnalyticalAccount? @relation("DefaultAnalytic", fields: [defaultAnalyticAccountId], references: [id])
 
   invoiceLines InvoiceLine[]
-  budgetLines  BudgetLine[]
   poLines      PurchaseOrderLine[]
   soLines      SalesOrderLine[]
   
@@ -209,62 +208,54 @@ enum AccountType {
 // ============================================================================
 
 model Budget {
-  id                 String   @id @default(uuid())
-  name               String
-  fiscalYear         Int
+  id                    String              @id @default(uuid())
+  name                  String
   
-  departmentId       String?  // Optional link to analytic account
-  department         AnalyticalAccount? @relation(fields: [departmentId], references: [id])
-
-  status             BudgetStatus @default(DRAFT)
-  version            Int          @default(1)
+  // Period-based instead of fiscal year
+  startDate             DateTime
+  endDate               DateTime
   
-  previousVersionId  String?      @unique
-  previousVersion    Budget?      @relation("BudgetHistory", fields: [previousVersionId], references: [id])
-  nextVersion        Budget?      @relation("BudgetHistory")
-
-  lines              BudgetLine[]
+  // Required link to analytic account (cost center)
+  analyticAccountId     String
+  analyticAccount       AnalyticalAccount   @relation(fields: [analyticAccountId], references: [id])
   
-  createdBy          String
-  creator            User         @relation("BudgetCreator", fields: [createdBy], references: [id])
-
-  createdAt          DateTime     @default(now())
-  updatedAt          DateTime     @updatedAt
-
-  @@index([departmentId])
-  @@index([fiscalYear])
+  // Budget type for categorization
+  budgetType            BudgetType
+  
+  // Single budgeted amount (no budget lines)
+  budgetedAmount        Decimal             @db.Decimal(15, 2)
+  
+  // Status workflow
+  status                BudgetStatus        @default(DRAFT)
+  
+  // Revision chain (simplified)
+  revisionOfId          String?             @unique
+  revisionOf            Budget?             @relation("BudgetRevision", fields: [revisionOfId], references: [id])
+  revisedBy             Budget?             @relation("BudgetRevision")
+  
+  // Audit fields
+  createdBy             String
+  creator               User                @relation("BudgetCreator", fields: [createdBy], references: [id])
+  
+  createdAt             DateTime            @default(now())
+  updatedAt             DateTime            @updatedAt
+  
+  @@index([analyticAccountId])
+  @@index([startDate, endDate])
+  @@index([status])
   @@map("budgets")
 }
 
-enum BudgetStatus {
-  DRAFT
-  PENDING_APPROVAL
-  APPROVED
-  REJECTED
-  ARCHIVED
+enum BudgetType {
+  INCOME
+  EXPENSE
 }
 
-model BudgetLine {
-  id              String   @id @default(uuid())
-  budgetId        String
-  budget          Budget   @relation(fields: [budgetId], references: [id], onDelete: Cascade)
-  
-  // A budget line can target a specific product OR just a category/general bucket via string
-  productId       String?
-  product         Product? @relation(fields: [productId], references: [id])
-  
-  description     String?
-  
-  plannedAmount   Decimal  @db.Decimal(15, 2)
-  
-  // Store distributed monthly amounts for granularity (JSONB for flexibility or separate table)
-  // For strict SQL, we might use 12 columns or a sub-table. 
-  // Sticking to total for now, keeping it normalized.
-  
-  createdAt       DateTime @default(now())
-  updatedAt       DateTime @updatedAt
-
-  @@map("budget_lines")
+enum BudgetStatus {
+  DRAFT      // Editable, no actuals
+  CONFIRMED  // Locked, actuals computing
+  REVISED    // Old version, read-only
+  ARCHIVED   // Hidden from default list
 }
 
 // ============================================================================

@@ -98,22 +98,21 @@ export class DashboardService {
     });
   }
 
-  async getBudgetUtilization() {
+  async getBudgetUtilization(userId: string) {
+    // Added userId parameter
     // Get budgets and compute usage
     const budgets = await this.prisma.budget.findMany({
-      include: { lines: true },
+      where: { createdBy: userId },
+      take: 5,
+      orderBy: { createdAt: "desc" },
     });
 
     // Transform for Donut Chart (Top 5 categories by planned amount)
     return budgets
       .map((b) => {
-        const total = b.lines.reduce(
-          (sum, line) => sum + Number(line.plannedAmount),
-          0,
-        );
         return {
           name: b.name,
-          value: total,
+          value: Number(b.budgetedAmount), // Use budgetedAmount directly
           color: "#" + Math.floor(Math.random() * 16777215).toString(16), // Random color for now
         };
       })

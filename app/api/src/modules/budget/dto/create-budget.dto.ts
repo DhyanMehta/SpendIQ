@@ -1,22 +1,16 @@
 import {
+  IsString,
+  IsNotEmpty,
   IsDateString,
   IsEnum,
-  IsNotEmpty,
-  IsNumber,
-  IsString,
   IsUUID,
 } from "class-validator";
+import { BudgetType } from "@prisma/client";
 import { Type } from "class-transformer";
 
-// Local enum until Prisma Client is regenerated
-export enum BudgetType {
-  INCOME = "INCOME",
-  EXPENSE = "EXPENSE",
-}
-
 export class CreateBudgetDto {
-  @IsNotEmpty()
   @IsString()
+  @IsNotEmpty()
   name: string;
 
   @IsDateString()
@@ -33,6 +27,5 @@ export class CreateBudgetDto {
 
   @Type(() => Number)
   @IsNotEmpty()
-  @IsNumber()
-  budgetedAmount: number;
+  budgetedAmount: number; // Will be converted to Decimal in service
 }

@@ -1,4 +1,4 @@
-import { Controller, Get, UseGuards } from "@nestjs/common";
+import { Controller, Get, UseGuards, Request } from "@nestjs/common";
 import { DashboardService } from "./dashboard.service";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 
@@ -23,7 +23,7 @@ export class DashboardController {
   }
 
   @Get("budget-usage")
-  async getBudgetUsage() {
-    return this.dashboardService.getBudgetUtilization();
+  async getBudgetUsage(@Request() req) {
+    return this.dashboardService.getBudgetUtilization(req.user.userId);
   }
 }
