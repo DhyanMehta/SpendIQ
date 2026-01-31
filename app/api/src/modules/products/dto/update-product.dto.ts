@@ -1,7 +1,7 @@
 import {
   IsString,
   IsOptional,
-  IsDecimal,
+  IsNumber,
   Min,
   IsUUID,
   IsEnum,
@@ -20,13 +20,13 @@ export class UpdateProductDto {
 
   @IsOptional()
   @Type(() => Number)
-  @IsDecimal({ decimal_digits: "0,2" })
+  @IsNumber()
   @Min(0)
   salesPrice?: number;
 
   @IsOptional()
   @Type(() => Number)
-  @IsDecimal({ decimal_digits: "0,2" })
+  @IsNumber()
   @Min(0)
   purchasePrice?: number;
 

@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
+import { budgetsApi } from "@/lib/api/client";
 
 export default function BudgetsPage() {
   const router = useRouter();
@@ -17,19 +18,7 @@ export default function BudgetsPage() {
       try {
         setLoading(true);
         setError(null);
-
-        const token = localStorage.getItem("accessToken");
-        const response = await fetch("http://localhost:4000/budgets", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-
-        const data = await response.json();
+        const data = await budgetsApi.getAll();
         setBudgets(Array.isArray(data) ? data : []);
       } catch (err: any) {
         console.error("Failed to load budgets:", err);

@@ -1,4 +1,11 @@
-import { IsString, IsOptional, IsDecimal, Min, IsUUID } from "class-validator";
+import {
+  IsString,
+  IsOptional,
+  IsNumber,
+  Min,
+  IsUUID,
+  IsEnum,
+} from "class-validator";
 import { Type } from "class-transformer";
 
 export class CreateProductDto {
@@ -10,14 +17,18 @@ export class CreateProductDto {
   description?: string;
 
   @Type(() => Number)
-  @IsDecimal({ decimal_digits: "0,2" })
+  @IsNumber()
   @Min(0)
   salesPrice: number;
 
   @Type(() => Number)
-  @IsDecimal({ decimal_digits: "0,2" })
+  @IsNumber()
   @Min(0)
   purchasePrice: number;
+
+  @IsOptional()
+  @IsEnum(["ACTIVE", "ARCHIVED"])
+  status?: "ACTIVE" | "ARCHIVED";
 
   @IsOptional()
   @IsString()

@@ -1,7 +1,7 @@
 "use client";
 
 import { cn } from "@/lib/utils";
-import { Button } from "@/components/ui/button";
+// import { Button } from "@/components/ui/button";
 import {
   LayoutDashboard,
   PieChart,
@@ -14,6 +14,7 @@ import {
   ChevronLeft,
   ShoppingCart,
   FileText,
+  Package,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -26,6 +27,7 @@ const sidebarItems = [
   { icon: Receipt, label: "Transactions", href: "/dashboard/transactions" },
   { icon: ShoppingCart, label: "Sales", href: "/dashboard/sale/order" },
   { icon: FileText, label: "Invoices", href: "/dashboard/sale/invoice" },
+  { icon: Package, label: "Products", href: "/dashboard/products" },
   { icon: Wallet, label: "Wallet", href: "/dashboard/budgets" },
   { icon: PieChart, label: "Analytics", href: "/dashboard/analytics" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },

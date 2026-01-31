@@ -169,5 +169,29 @@ export const paymentsApi = {
   },
 };
 
+// Budgets API
+export const budgetsApi = {
+  getAll: async (params?: any) => {
+    const res = await apiClient.get("/budgets", { params });
+    return res.data;
+  },
+  getOne: async (id: string) => {
+    const res = await apiClient.get(`/budgets/${id}`);
+    return res.data;
+  },
+  create: async (data: any) => {
+    const res = await apiClient.post("/budgets", data);
+    return res.data;
+  },
+  update: async (id: string, data: any) => {
+    const res = await apiClient.patch(`/budgets/${id}`, data);
+    return res.data;
+  },
+  delete: async (id: string) => {
+    const res = await apiClient.delete(`/budgets/${id}`);
+    return res.data;
+  },
+};
+
 export { apiClient };
 export default apiClient;
