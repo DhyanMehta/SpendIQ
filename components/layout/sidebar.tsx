@@ -15,6 +15,7 @@ import {
   ShoppingCart,
   FileText,
   Package,
+  UserPlus,
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
@@ -30,6 +31,7 @@ const sidebarItems = [
   { icon: Package, label: "Products", href: "/dashboard/products" },
   { icon: Wallet, label: "Wallet", href: "/dashboard/budgets" },
   { icon: PieChart, label: "Analytics", href: "/dashboard/analytics" },
+  { icon: UserPlus, label: "Users", href: "/dashboard/admin/users/create" },
   { icon: Settings, label: "Settings", href: "/dashboard/settings" },
 ];
 
