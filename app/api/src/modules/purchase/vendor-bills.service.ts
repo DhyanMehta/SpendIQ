@@ -90,7 +90,7 @@ export class VendorBillsService {
         lines: {
           include: {
             product: true,
-            analyticAccount: true, // Fixed relation name
+            analyticAccount: true,
           },
         },
         partner: true,
@@ -106,13 +106,7 @@ export class VendorBillsService {
       throw new BadRequestException("Only Draft bills can be posted");
     }
 
-    // 1. Check Budget Availability (Non-blocking warning logic handled by frontend before this?
-    // Or we return warnings here too?
-    // Requirement: "Budget Impact: Only Posted Vendor Bills affect expense budgets."
-    // "Budget Warnings: ... Vendor Bill Posting if amount exceeds..."
-    // Ideally user sees warning BEFORE final confirmation.
-    // Let's implement a 'check' check similar to PO.
-
+    // Budget Warning Check
     const warnings = [];
     for (const line of bill.lines) {
       if (line.analyticAccountId) {
@@ -131,8 +125,7 @@ export class VendorBillsService {
       }
     }
 
-    // 2. Post the Bill
-    // (In a real ERP, this creates Journal Entries. Here we just set status to POSTED which triggers Actuals calc in BudgetsService)
+    // Post the Bill
     const updatedBill = await this.prisma.invoice.update({
       where: { id },
       data: { status: InvoiceStatus.POSTED },
@@ -165,5 +158,31 @@ export class VendorBillsService {
       }
     }
     return warnings;
+  }
+
+  async update(id: string, dto: Partial<CreateVendorBillDto>, userId: string) {
+    const bill = await this.findOne(id, userId);
+    if (bill.status !== InvoiceStatus.DRAFT) {
+      throw new BadRequestException("Only Draft bills can be updated");
+    }
+
+    return this.prisma.invoice.update({
+      where: { id },
+      data: {
+        date: dto.billDate ? new Date(dto.billDate) : undefined,
+        dueDate: dto.dueDate ? new Date(dto.dueDate) : undefined,
+      },
+    });
+  }
+
+  async remove(id: string, userId: string) {
+    const bill = await this.findOne(id, userId);
+    if (bill.status !== InvoiceStatus.DRAFT) {
+      throw new BadRequestException("Only Draft bills can be deleted");
+    }
+
+    return this.prisma.invoice.delete({
+      where: { id },
+    });
   }
 }

@@ -90,14 +90,6 @@ export class PurchaseOrdersService {
       throw new BadRequestException("Only Draft POs can be updated");
     }
 
-    // Full overwrite of lines typically needed for PO edits or specific line patching
-    // For MVP, we'll re-calculate totals and update header fields if provided.
-    // Line updates are complex without specific line IDs in DTO.
-    // Simplified: Update header only for MVP or full line replace (complex).
-
-    // NOTE: This basic update mostly handles status or header info.
-    // Real-world needs line management.
-
     return this.prisma.purchaseOrder.update({
       where: { id },
       data: {
@@ -150,17 +142,26 @@ export class PurchaseOrdersService {
     };
   }
 
-  async remove(id: string) {
-    // Only allow delete if Draft
+  async cancel(id: string) {
     const po = await this.findOne(id);
-    if (
-      po.status !== PurchOrderStatus.DRAFT &&
-      po.status !== PurchOrderStatus.CANCELLED
-    ) {
-      throw new BadRequestException(
-        "Cannot delete confirmed POs. Cancel them instead.",
-      );
+    if (po.status === PurchOrderStatus.CANCELLED) {
+      throw new BadRequestException("PO is already cancelled");
     }
-    return this.prisma.purchaseOrder.delete({ where: { id } });
+
+    return this.prisma.purchaseOrder.update({
+      where: { id },
+      data: { status: PurchOrderStatus.CANCELLED },
+    });
+  }
+
+  async remove(id: string) {
+    const po = await this.findOne(id);
+    if (po.status !== PurchOrderStatus.DRAFT) {
+      throw new BadRequestException("Only Draft POs can be deleted");
+    }
+
+    return this.prisma.purchaseOrder.delete({
+      where: { id },
+    });
   }
 }
