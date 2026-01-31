@@ -80,17 +80,12 @@ export default function RegisterPage() {
 
     try {
       // Step 1: Send OTP
-      const response = await apiRequest("/auth/send-otp", {
+      await apiRequest("/auth/send-otp", {
         method: "POST",
         body: { email: values.email },
       });
 
-      // In development mode, the API returns the OTP
-      if (response.otp) {
-        console.log("🔐 Development Mode - OTP:", response.otp);
-        setOtpError(`✅ Development Mode: Your OTP is ${response.otp}`);
-      }
-
+      // OTP is sent via email - removed frontend display for security
       setShowOtpDialog(true);
     } catch (e: any) {
       console.error("[Register] OTP request failed:", e);
@@ -120,8 +115,27 @@ export default function RegisterPage() {
         body: { ...registrationData, otp },
       });
 
-      // On success, redirect to login
-      router.push("/login"); // Consider adding a success toast or direct login params
+      // Step 3: Auto-login after successful registration
+      const loginData = await apiRequest("/auth/login", {
+        method: "POST",
+        body: { loginId: values.loginId, password: values.password },
+      });
+
+      if (loginData && loginData.access_token) {
+        // Store in localStorage
+        localStorage.setItem("accessToken", loginData.access_token);
+
+        // Store in cookies for middleware
+        setCookie("accessToken", loginData.access_token, 7);
+
+        // Redirect to dashboard
+        router.push("/dashboard");
+      } else {
+        setOtpError(
+          "Registration successful but auto-login failed. Please login manually.",
+        );
+        router.push("/login");
+      }
     } catch (e: any) {
       console.error("[Register] Verification failed:", e);
       setOtpError(e?.message || "Verification failed. Please check the code.");

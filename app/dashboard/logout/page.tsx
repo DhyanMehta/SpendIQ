@@ -16,9 +16,13 @@ export default function LogoutPage() {
   const router = useRouter();
 
   const handleLogout = () => {
-    // Clear authentication tokens
-    localStorage.removeItem("token");
+    // Clear authentication tokens from localStorage
+    localStorage.removeItem("accessToken");
     localStorage.removeItem("user");
+
+    // Clear cookies by setting them to expire
+    document.cookie =
+      "accessToken=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
 
     // Clear any session data
     sessionStorage.clear();

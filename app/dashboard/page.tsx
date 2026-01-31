@@ -12,6 +12,7 @@ import { AddWidgetDialog } from "@/components/dashboard/add-widget-dialog";
 
 export default function DashboardPage() {
   const [showAddWidgetDialog, setShowAddWidgetDialog] = useState(false);
+  const [userName, setUserName] = useState<string>("User");
   const [metrics, setMetrics] = useState<any>({
     balance: 0,
     income: 0,
@@ -26,19 +27,22 @@ export default function DashboardPage() {
   useEffect(() => {
     async function fetchDashboardData() {
       try {
-        const [metricsData, flowData, budgetData, recentTx] = await Promise.all(
-          [
+        const [metricsData, flowData, budgetData, recentTx, profileData] =
+          await Promise.all([
             apiRequest("/dashboard/metrics"),
             apiRequest("/dashboard/money-flow"),
             apiRequest("/dashboard/budget-usage"),
             apiRequest("/dashboard/recent-transactions"),
-          ],
-        );
+            apiRequest("/auth/profile"),
+          ]);
 
         if (metricsData) setMetrics(metricsData);
         if (flowData) setDataFlow(flowData);
         if (budgetData) setDataBudget(budgetData);
         if (recentTx) setTransactions(recentTx);
+        if (profileData && profileData.name) {
+          setUserName(profileData.name);
+        }
       } catch (error) {
         console.error("Failed to load dashboard data", error);
       }
@@ -53,14 +57,13 @@ export default function DashboardPage() {
       <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">
-            Welcome back, Admin!
+            Welcome back, {userName}!
           </h1>
           <p className="text-muted-foreground mt-1">
             Overview of your financial performance.
           </p>
         </div>
         <div className="flex items-center gap-3">
-          
           <Button
             className="rounded-full px-6 h-12 shadow-lg shadow-primary/25 hover:shadow-primary/40 transition-shadow"
             onClick={() => setShowAddWidgetDialog(true)}
