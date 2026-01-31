@@ -1,17 +1,11 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
-import {
-  Plus,
-  Trash2,
-  Save,
-  CheckCircle,
-  FileText,
-  AlertTriangle,
-} from "lucide-react";
+import { useQuery } from "@tanstack/react-query";
+import { Plus, Trash2, Save, CheckCircle, FileText } from "lucide-react";
 import { format } from "date-fns";
 
 import { Button } from "@/components/ui/button";
@@ -35,24 +29,25 @@ import {
 } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import {
   CreatePurchaseOrderSchema,
   CreatePurchaseOrderFormValues,
   PurchaseOrderLineSchema,
 } from "@/lib/purchase/validators";
 import { purchaseApi } from "@/lib/purchase/api";
+import { client } from "@/lib/api/client";
 import { BudgetWarning } from "./BudgetWarning";
 import {
   BudgetWarning as BudgetWarningType,
   PurchaseOrder,
   PurchOrderStatus,
 } from "@/lib/purchase/types";
-
-// Placeholder for now, ideally fetched from API
-// In real app, these would be Select components with data from Contacts/Products/Analytics APIs
-const MOCK_VENDORS = [
-  { id: "v1", name: "Acme Corp" },
-  { id: "v2", name: "Global Supplies" },
-];
 
 interface PurchaseOrderFormProps {
   initialData?: PurchaseOrder;
@@ -63,6 +58,33 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
   const [warnings, setWarnings] = useState<BudgetWarningType[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [po, setPo] = useState<PurchaseOrder | undefined>(initialData);
+
+  // Fetch vendors
+  const { data: vendors = [] } = useQuery({
+    queryKey: ["vendors"],
+    queryFn: async () => {
+      const response = await client.get("/contacts?type=VENDOR");
+      return Array.isArray(response) ? response : response.data || [];
+    },
+  });
+
+  // Fetch products
+  const { data: products = [] } = useQuery({
+    queryKey: ["products"],
+    queryFn: async () => {
+      const response = await client.get("/products");
+      return Array.isArray(response) ? response : response.data || [];
+    },
+  });
+
+  // Fetch analytic accounts
+  const { data: analyticAccounts = [] } = useQuery({
+    queryKey: ["analyticAccounts"],
+    queryFn: async () => {
+      const response = await client.get("/analytical-accounts");
+      return Array.isArray(response) ? response : response.data || [];
+    },
+  });
 
   const isEditable = !po || po.status === PurchOrderStatus.DRAFT;
 
@@ -235,11 +257,26 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
                   name="vendorId"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Vendor</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Vendor ID (UUID)" {...field} />
-                        {/* <Select ... /> would be better */}
-                      </FormControl>
+                      <FormLabel>Vendor *</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value}
+                        disabled={!isEditable}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select vendor" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {vendors.map((vendor: any) => (
+                            <SelectItem key={vendor.id} value={vendor.id}>
+                              {vendor.name}
+                              {vendor.company && ` (${vendor.company})`}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
                       <FormMessage />
                     </FormItem>
                   )}
@@ -306,9 +343,50 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
                           name={`lines.${index}.productId`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormControl>
-                                <Input placeholder="Product ID" {...field} />
-                              </FormControl>
+                              <Select
+                                onValueChange={(value) => {
+                                  field.onChange(value);
+                                  // Auto-fill description and price when product is selected
+                                  const product = products.find(
+                                    (p: any) => p.id === value,
+                                  );
+                                  if (product) {
+                                    form.setValue(
+                                      `lines.${index}.description`,
+                                      product.name || "",
+                                    );
+                                    form.setValue(
+                                      `lines.${index}.unitPrice`,
+                                      Number(product.purchasePrice) || 0,
+                                    );
+                                    // Set default analytic account if available
+                                    if (product.defaultAnalyticAccountId) {
+                                      form.setValue(
+                                        `lines.${index}.analyticalAccountId`,
+                                        product.defaultAnalyticAccountId,
+                                      );
+                                    }
+                                  }
+                                }}
+                                value={field.value}
+                                disabled={!isEditable}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Select product" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {products.map((product: any) => (
+                                    <SelectItem
+                                      key={product.id}
+                                      value={product.id}
+                                    >
+                                      {product.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -334,9 +412,27 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
                           name={`lines.${index}.analyticalAccountId`}
                           render={({ field }) => (
                             <FormItem>
-                              <FormControl>
-                                <Input placeholder="Analytic ID" {...field} />
-                              </FormControl>
+                              <Select
+                                onValueChange={field.onChange}
+                                value={field.value}
+                                disabled={!isEditable}
+                              >
+                                <FormControl>
+                                  <SelectTrigger>
+                                    <SelectValue placeholder="Optional" />
+                                  </SelectTrigger>
+                                </FormControl>
+                                <SelectContent>
+                                  {analyticAccounts.map((account: any) => (
+                                    <SelectItem
+                                      key={account.id}
+                                      value={account.id}
+                                    >
+                                      {account.name}
+                                    </SelectItem>
+                                  ))}
+                                </SelectContent>
+                              </Select>
                               <FormMessage />
                             </FormItem>
                           )}
@@ -415,3 +511,5 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
     </div>
   );
 }
+
+export default PurchaseOrderForm;
