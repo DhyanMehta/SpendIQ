@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
+import { client } from "@/lib/api/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,7 @@ export function POLineItems({
   const { data: products } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/products");
+      const { data } = await client.get("/products");
       return data;
     },
   });
@@ -46,7 +46,7 @@ export function POLineItems({
   const { data: analyticalAccounts } = useQuery({
     queryKey: ["analytical-accounts"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/analytical-accounts");
+      const { data } = await client.get("/analytical-accounts");
       return data;
     },
   });
@@ -83,10 +83,11 @@ export function POLineItems({
       if (product) {
         newLines[index].description = product.name;
         newLines[index].unitPrice = product.purchasePrice || 0;
-        
+
         // Auto-fill analytical account if product has default
         if (product.defaultAnalyticAccountId) {
-          newLines[index].analyticalAccountId = product.defaultAnalyticAccountId;
+          newLines[index].analyticalAccountId =
+            product.defaultAnalyticAccountId;
         }
       }
     }
@@ -117,7 +118,9 @@ export function POLineItems({
                 <TableHead className="w-[120px]">Unit Price</TableHead>
                 <TableHead className="w-[120px]">Subtotal</TableHead>
                 <TableHead className="w-[200px]">Analytic Account</TableHead>
-                {!isReadOnly && <TableHead className="w-[80px]">Action</TableHead>}
+                {!isReadOnly && (
+                  <TableHead className="w-[80px]">Action</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>

@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
+import { client } from "@/lib/api/client";
 
 interface Payment {
   id: string;
@@ -55,7 +55,7 @@ export function usePayments(filters?: {
       if (filters?.endDate) params.append("endDate", filters.endDate);
       if (filters?.status) params.append("status", filters.status);
 
-      const response = await apiClient.get<{
+      const response = await client.get<{
         data: Payment[];
         pagination: any;
       }>(`/payments?${params.toString()}`);
@@ -69,7 +69,7 @@ export function usePayment(id: string) {
     queryKey: ["payment", id],
     queryFn: async () => {
       if (!id || id === "create") return null;
-      const response = await apiClient.get<Payment>(`/payments/${id}`);
+      const response = await client.get<Payment>(`/payments/${id}`);
       return response.data;
     },
     enabled: !!id && id !== "create",
@@ -81,8 +81,8 @@ export function useUnpaidBills(vendorId: string) {
     queryKey: ["unpaid-bills", vendorId],
     queryFn: async () => {
       if (!vendorId) return [];
-      const response = await apiClient.get<UnpaidBill[]>(
-        `/payments/unpaid-bills/${vendorId}`
+      const response = await client.get<UnpaidBill[]>(
+        `/payments/unpaid-bills/${vendorId}`,
       );
       return response.data;
     },
@@ -95,7 +95,7 @@ export function useCreatePayment() {
 
   return useMutation({
     mutationFn: async (dto: CreatePaymentDto) => {
-      const response = await apiClient.post<Payment>("/payments", dto);
+      const response = await client.post<Payment>("/payments", dto);
       return response.data;
     },
     onSuccess: () => {
@@ -115,7 +115,7 @@ export function useUpdatePayment() {
       id: string;
       dto: Partial<CreatePaymentDto>;
     }) => {
-      const response = await apiClient.patch<Payment>(`/payments/${id}`, dto);
+      const response = await client.patch<Payment>(`/payments/${id}`, dto);
       return response.data;
     },
     onSuccess: (_, variables) => {
@@ -130,7 +130,7 @@ export function usePostPayment() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await apiClient.post<Payment>(`/payments/${id}/post`);
+      const response = await client.post<Payment>(`/payments/${id}/post`);
       return response.data;
     },
     onSuccess: (_, id) => {
@@ -147,7 +147,7 @@ export function useDeletePayment() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const response = await apiClient.delete(`/payments/${id}`);
+      const response = await client.delete(`/payments/${id}`);
       return response.data;
     },
     onSuccess: () => {
