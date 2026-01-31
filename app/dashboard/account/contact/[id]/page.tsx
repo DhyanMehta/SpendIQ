@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { ArrowLeft, Save, Archive, Mail } from "lucide-react";
+import { ArrowLeft, Save, Mail, Upload, X, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -21,6 +21,7 @@ interface ContactFormData {
   type: "CUSTOMER" | "VENDOR";
   isPortalUser: boolean;
   imageUrl: string;
+  tags: string[];
 }
 
 export default function ContactFormPage() {
@@ -28,9 +29,12 @@ export default function ContactFormPage() {
   const params = useParams();
   const isEdit = !!params?.id;
   const contactId = params?.id as string;
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const [tagInput, setTagInput] = useState("");
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
   const [formData, setFormData] = useState<ContactFormData>({
     name: "",
     email: "",
@@ -43,6 +47,7 @@ export default function ContactFormPage() {
     type: "CUSTOMER",
     isPortalUser: false,
     imageUrl: "",
+    tags: [],
   });
   const [errors, setErrors] = useState<
     Partial<Record<keyof ContactFormData, string>>
@@ -71,7 +76,11 @@ export default function ContactFormPage() {
         type: contact.type || "CUSTOMER",
         isPortalUser: contact.isPortalUser || false,
         imageUrl: contact.imageUrl || "",
+        tags: contact.tags?.map((t: any) => t.tag?.name || t.name) || [],
       });
+      if (contact.imageUrl) {
+        setImagePreview(contact.imageUrl);
+      }
     } catch (error) {
       console.error("Failed to load contact:", error);
       alert("Failed to load contact");
@@ -124,42 +133,91 @@ export default function ContactFormPage() {
       if (formData.country) payload.country = formData.country;
       if (formData.pincode) payload.pincode = formData.pincode;
       if (formData.imageUrl) payload.imageUrl = formData.imageUrl;
+      if (formData.tags.length > 0) payload.tags = formData.tags;
+
+      console.log("[ContactForm] Submitting payload:", payload);
 
       if (isEdit) {
-        await apiRequest(`/contacts/${contactId}`, {
-          method: "PUT",
+        const result = await apiRequest(`/contacts/${contactId}`, {
+          method: "PATCH",
           body: payload,
         });
+        console.log("[ContactForm] Update response:", result);
         alert("Contact updated successfully");
       } else {
-        await apiRequest("/contacts", {
+        const result = await apiRequest("/contacts", {
           method: "POST",
           body: payload,
         });
+        console.log("[ContactForm] Create response:", result);
         alert("Contact created successfully");
       }
 
       router.push("/dashboard/account/contact");
-    } catch (error) {
-      console.error("Failed to save contact:", error);
-      alert("Failed to save contact");
+    } catch (error: any) {
+      console.error("[ContactForm] Failed to save contact:", error);
+      console.error("[ContactForm] Error details:", {
+        message: error?.message,
+        stack: error?.stack,
+        response: error?.response,
+      });
+      alert(`Failed to save contact: ${error?.message || "Unknown error"}`);
     } finally {
       setSaving(false);
     }
   };
 
-  const handleArchive = async () => {
-    if (!confirm("Are you sure you want to archive this contact?")) return;
+  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      // Validate file type
+      if (!file.type.startsWith("image/")) {
+        alert("Please select an image file");
+        return;
+      }
+      // Validate file size (max 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        alert("Image size must be less than 5MB");
+        return;
+      }
 
-    try {
-      await apiRequest(`/contacts/${contactId}/archive`, {
-        method: "DELETE",
-      });
-      alert("Contact archived successfully");
-      router.push("/dashboard/account/contact");
-    } catch (error) {
-      console.error("Failed to archive contact:", error);
-      alert("Failed to archive contact");
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        const base64String = reader.result as string;
+        setImagePreview(base64String);
+        setFormData((prev) => ({ ...prev, imageUrl: base64String }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const removeImage = () => {
+    setImagePreview(null);
+    setFormData((prev) => ({ ...prev, imageUrl: "" }));
+    if (fileInputRef.current) {
+      fileInputRef.current.value = "";
+    }
+  };
+
+  const addTag = () => {
+    const tag = tagInput.trim();
+    if (tag && !formData.tags.includes(tag)) {
+      setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag] }));
+      setTagInput("");
+    }
+  };
+
+  const removeTag = (tagToRemove: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      tags: prev.tags.filter((t) => t !== tagToRemove),
+    }));
+  };
+
+  const handleTagKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+      addTag();
     }
   };
 
@@ -220,19 +278,11 @@ export default function ContactFormPage() {
         </div>
 
         <div className="flex gap-2">
-          {isEdit && (
-            <>
-              <Button variant="outline" onClick={handleArchive}>
-                <Archive className="mr-2 h-4 w-4" />
-                Archive
-              </Button>
-              {!formData.isPortalUser && (
-                <Button variant="outline" onClick={handleSendPortalInvite}>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Send Portal Invite
-                </Button>
-              )}
-            </>
+          {isEdit && !formData.isPortalUser && (
+            <Button variant="outline" onClick={handleSendPortalInvite}>
+              <Mail className="mr-2 h-4 w-4" />
+              Send Portal Invite
+            </Button>
           )}
           <Button onClick={handleSubmit} disabled={saving}>
             <Save className="mr-2 h-4 w-4" />
@@ -312,6 +362,101 @@ export default function ContactFormPage() {
                 </select>
               </div>
             </div>
+          </CardContent>
+        </Card>
+
+        {/* Photo Upload */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Contact Photo</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="flex items-center gap-6">
+              <div className="relative">
+                {imagePreview ? (
+                  <div className="relative">
+                    <img
+                      src={imagePreview}
+                      alt="Contact preview"
+                      className="w-24 h-24 rounded-full object-cover border-2 border-border"
+                    />
+                    <button
+                      type="button"
+                      onClick={removeImage}
+                      className="absolute -top-2 -right-2 bg-destructive text-destructive-foreground rounded-full p-1 hover:bg-destructive/90"
+                    >
+                      <X className="h-4 w-4" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="w-24 h-24 rounded-full bg-muted flex items-center justify-center border-2 border-dashed border-border">
+                    <Upload className="h-8 w-8 text-muted-foreground" />
+                  </div>
+                )}
+              </div>
+              <div className="space-y-2">
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept="image/*"
+                  onChange={handleImageUpload}
+                  className="hidden"
+                />
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() => fileInputRef.current?.click()}
+                >
+                  <Upload className="mr-2 h-4 w-4" />
+                  {imagePreview ? "Change Photo" : "Upload Photo"}
+                </Button>
+                <p className="text-xs text-muted-foreground">
+                  JPG, PNG or GIF. Max 5MB.
+                </p>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Tags */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Tags</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="flex flex-wrap gap-2 mb-4">
+              {formData.tags.map((tag, index) => (
+                <span
+                  key={index}
+                  className="inline-flex items-center gap-1 px-3 py-1 rounded-full bg-primary/10 text-primary text-sm"
+                >
+                  {tag}
+                  <button
+                    type="button"
+                    onClick={() => removeTag(tag)}
+                    className="hover:bg-primary/20 rounded-full p-0.5"
+                  >
+                    <X className="h-3 w-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <div className="flex gap-2">
+              <Input
+                value={tagInput}
+                onChange={(e) => setTagInput(e.target.value)}
+                onKeyDown={handleTagKeyDown}
+                placeholder="Add tag (e.g., B2B, Retail, Premium)"
+                className="flex-1"
+              />
+              <Button type="button" variant="outline" onClick={addTag}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add
+              </Button>
+            </div>
+            <p className="text-xs text-muted-foreground">
+              Press Enter or click Add to create a tag. Tags help categorize contacts.
+            </p>
           </CardContent>
         </Card>
 

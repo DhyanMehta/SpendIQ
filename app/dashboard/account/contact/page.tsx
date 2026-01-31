@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Plus, Search, Filter, Mail, Eye } from "lucide-react";
+import { Plus, Search, Filter, Mail, Eye, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -146,6 +146,7 @@ export default function ContactsPage() {
           <Table>
             <TableHeader className="sticky top-0 bg-background">
               <TableRow>
+                <TableHead className="w-16">Photo</TableHead>
                 <TableHead>Contact Name</TableHead>
                 <TableHead>Email</TableHead>
                 <TableHead>Phone</TableHead>
@@ -158,7 +159,7 @@ export default function ContactsPage() {
             <TableBody>
               {loading ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-8">
+                  <TableCell colSpan={8} className="text-center py-8">
                     <div className="flex items-center justify-center">
                       <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                     </div>
@@ -166,7 +167,7 @@ export default function ContactsPage() {
                 </TableRow>
               ) : contacts.length === 0 ? (
                 <TableRow>
-                  <TableCell colSpan={7} className="text-center py-12">
+                  <TableCell colSpan={8} className="text-center py-12">
                     <div className="flex flex-col items-center justify-center text-muted-foreground">
                       <Mail className="h-12 w-12 mb-4 opacity-50" />
                       <p className="text-lg font-medium">No contacts found</p>
@@ -192,6 +193,19 @@ export default function ContactsPage() {
                     className="cursor-pointer hover:bg-muted/50 transition-colors"
                     onClick={() => handleRowClick(contact.id)}
                   >
+                    <TableCell>
+                      {contact.imageUrl ? (
+                        <img
+                          src={contact.imageUrl}
+                          alt={contact.name}
+                          className="w-10 h-10 rounded-full object-cover border border-border"
+                        />
+                      ) : (
+                        <div className="w-10 h-10 rounded-full bg-muted flex items-center justify-center border border-border">
+                          <User className="h-5 w-5 text-muted-foreground" />
+                        </div>
+                      )}
+                    </TableCell>
                     <TableCell className="font-medium">
                       {contact.name}
                     </TableCell>

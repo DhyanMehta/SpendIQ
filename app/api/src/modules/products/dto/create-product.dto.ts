@@ -10,7 +10,7 @@ import { Type } from "class-transformer";
 
 export class CreateProductDto {
   @IsString()
-  name: string;
+  name!: string;
 
   @IsOptional()
   @IsString()
@@ -19,12 +19,12 @@ export class CreateProductDto {
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  salesPrice: number;
+  salesPrice!: number;
 
   @Type(() => Number)
   @IsNumber()
   @Min(0)
-  purchasePrice: number;
+  purchasePrice!: number;
 
   @IsOptional()
   @IsEnum(["ACTIVE", "ARCHIVED"])

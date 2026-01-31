@@ -11,10 +11,10 @@ import { ContactType } from "@prisma/client";
 
 export class CreateContactDto {
   @IsString()
-  name: string;
+  name!: string;
 
   @IsEmail()
-  email: string;
+  email!: string;
 
   @IsOptional()
   @IsString()
@@ -41,7 +41,7 @@ export class CreateContactDto {
   pincode?: string;
 
   @IsEnum(ContactType)
-  type: ContactType;
+  type!: ContactType;
 
   @IsOptional()
   @IsBoolean()
@@ -53,6 +53,6 @@ export class CreateContactDto {
   tags?: string[]; // Array of tag IDs or names
 
   @IsOptional()
-  @IsUrl()
-  imageUrl?: string;
+  @IsString()
+  imageUrl?: string; // Can be URL or base64 data URL
 }

@@ -4,19 +4,19 @@ import { Type } from 'class-transformer';
 class VendorBillLineDto {
   @IsString()
   @IsNotEmpty()
-  productId: string;
+  productId!: string;
 
   @IsString()
   @IsNotEmpty()
-  description: string;
+  description!: string;
 
   @IsNumber()
   @Min(0.01)
-  quantity: number;
+  quantity!: number;
 
   @IsNumber()
   @Min(0)
-  unitPrice: number;
+  unitPrice!: number;
 
   @IsString()
   @IsOptional()
@@ -26,17 +26,17 @@ class VendorBillLineDto {
 export class CreateVendorBillDto {
   @IsString()
   @IsNotEmpty()
-  vendorId: string;
+  vendorId!: string;
 
   @IsDate()
   @Type(() => Date)
   @IsNotEmpty()
-  billDate: Date;
+  billDate!: Date;
 
   @IsDate()
   @Type(() => Date)
   @IsNotEmpty()
-  dueDate: Date;
+  dueDate!: Date;
 
   @IsString()
   @IsOptional()
@@ -45,5 +45,5 @@ export class CreateVendorBillDto {
   @IsArray()
   @ValidateNested({ each: true })
   @Type(() => VendorBillLineDto)
-  lines: VendorBillLineDto[];
+  lines!: VendorBillLineDto[];
 }

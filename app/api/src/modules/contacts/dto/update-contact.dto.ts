@@ -56,8 +56,8 @@ export class UpdateContactDto {
   tags?: string[];
 
   @IsOptional()
-  @IsUrl()
-  imageUrl?: string;
+  @IsString()
+  imageUrl?: string; // Can be URL or base64 data URL
 
   @IsOptional()
   @IsEnum(Status)

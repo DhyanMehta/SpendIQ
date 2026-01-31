@@ -15,7 +15,7 @@ export class ContactsService {
   constructor(
     private prisma: PrismaService,
     private mailService: MailService,
-  ) {}
+  ) { }
 
   async create(createContactDto: CreateContactDto) {
     // Check for existing email
@@ -27,8 +27,8 @@ export class ContactsService {
       throw new ConflictException("Email already in use");
     }
 
-    // TODO: Handle tags after Prisma Client regeneration
-    // const tagConnections = await this.handleTags(createContactDto.tags || []);
+    // Handle tags
+    const tagConnections = await this.handleTags(createContactDto.tags || []);
 
     const contact = await this.prisma.contact.create({
       data: {
@@ -43,19 +43,17 @@ export class ContactsService {
         type: createContactDto.type,
         isPortalUser: createContactDto.isPortalUser || false,
         imageUrl: createContactDto.imageUrl,
-        // TODO: Re-enable after Prisma regeneration
-        // tags: {
-        //   create: tagConnections,
-        // },
+        tags: {
+          create: tagConnections,
+        },
       },
-      // TODO: Re-enable after Prisma regeneration
-      // include: {
-      //   tags: {
-      //     include: {
-      //       tag: true,
-      //     },
-      //   },
-      // },
+      include: {
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+      },
     });
 
     // If portal access enabled, send invitation email
@@ -94,14 +92,13 @@ export class ContactsService {
 
     return this.prisma.contact.findMany({
       where,
-      // TODO: Re-enable after Prisma regeneration
-      // include: {
-      //   tags: {
-      //     include: {
-      //       tag: true,
-      //     },
-      //   },
-      // },
+      include: {
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+      },
       orderBy: {
         name: "asc",
       },
@@ -112,12 +109,11 @@ export class ContactsService {
     const contact = await this.prisma.contact.findUnique({
       where: { id },
       include: {
-        // TODO: Re-enable after Prisma regeneration
-        // tags: {
-        //   include: {
-        //     tag: true,
-        //   },
-        // },
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
         portalUser: {
           select: {
             id: true,
@@ -149,15 +145,15 @@ export class ContactsService {
       }
     }
 
-    // TODO: Handle tags update after Prisma regeneration
-    // let tagUpdate = {};
-    // if (updateContactDto.tags) {
-    //   const tagConnections = await this.handleTags(updateContactDto.tags);
-    //   tagUpdate = {
-    //     deleteMany: {}, // Remove all existing tags
-    //     create: tagConnections, // Add new tags
-    //   };
-    // }
+    // Handle tags update
+    let tagUpdate = {};
+    if (updateContactDto.tags) {
+      const tagConnections = await this.handleTags(updateContactDto.tags);
+      tagUpdate = {
+        deleteMany: {}, // Remove all existing tags
+        create: tagConnections, // Add new tags
+      };
+    }
 
     const updated = await this.prisma.contact.update({
       where: { id },
@@ -173,17 +169,15 @@ export class ContactsService {
         type: updateContactDto.type,
         imageUrl: updateContactDto.imageUrl,
         status: updateContactDto.status,
-        // TODO: Re-enable after Prisma regeneration
-        // ...(updateContactDto.tags && { tags: tagUpdate }),
+        ...(updateContactDto.tags && { tags: tagUpdate }),
       },
-      // TODO: Re-enable after Prisma regeneration
-      // include: {
-      //   tags: {
-      //     include: {
-      //       tag: true,
-      //     },
-      //   },
-      // },
+      include: {
+        tags: {
+          include: {
+            tag: true,
+          },
+        },
+      },
     });
 
     return updated;
