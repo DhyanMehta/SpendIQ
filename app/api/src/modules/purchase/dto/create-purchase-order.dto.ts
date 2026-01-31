@@ -1,40 +1,46 @@
-import { IsString, IsNotEmpty, IsDate, IsArray, ValidateNested, IsNumber, IsOptional, Min } from 'class-validator';
-import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsDateString,
+  IsMongoId,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+  IsUUID,
+  ValidateNested,
+} from "class-validator";
+import { Type } from "class-transformer";
 
-class PurchaseOrderLineDto {
+class CreatePurchaseOrderLineDto {
+  @IsUUID()
+  @IsNotEmpty()
+  productId: string;
+
   @IsString()
   @IsNotEmpty()
-  productId!: string;
-
-  @IsString()
-  @IsNotEmpty()
-  description!: string;
+  description: string;
 
   @IsNumber()
-  @Min(0.01)
-  quantity!: number;
+  quantity: number;
 
   @IsNumber()
-  @Min(0)
-  unitPrice!: number;
+  unitPrice: number;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
   analyticalAccountId?: string;
 }
 
 export class CreatePurchaseOrderDto {
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
-  vendorId!: string;
+  vendorId: string;
 
-  @IsDate()
-  @Type(() => Date)
-  @IsNotEmpty()
-  orderDate!: Date;
+  @IsDateString()
+  orderDate: string;
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => PurchaseOrderLineDto)
-  lines!: PurchaseOrderLineDto[];
+  @Type(() => CreatePurchaseOrderLineDto)
+  lines: CreatePurchaseOrderLineDto[];
 }

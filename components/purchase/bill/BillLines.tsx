@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
+import { client } from "@/lib/api/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,7 @@ export function BillLines({
   const { data: products } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/products");
+      const { data } = await client.get("/products");
       return data;
     },
   });
@@ -46,7 +46,7 @@ export function BillLines({
   const { data: analyticalAccounts } = useQuery({
     queryKey: ["analytical-accounts"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/analytical-accounts");
+      const { data } = await client.get("/analytical-accounts");
       return data;
     },
   });
@@ -86,7 +86,8 @@ export function BillLines({
 
         // Auto-fill analytical account from product default
         if (product.defaultAnalyticAccountId) {
-          newLines[index].analyticalAccountId = product.defaultAnalyticAccountId;
+          newLines[index].analyticalAccountId =
+            product.defaultAnalyticAccountId;
         }
       }
     }
@@ -94,7 +95,9 @@ export function BillLines({
     setLines(newLines);
   };
 
-  const hasLineWithoutAnalytic = lines.some(line => !line.analyticalAccountId);
+  const hasLineWithoutAnalytic = lines.some(
+    (line) => !line.analyticalAccountId,
+  );
 
   return (
     <Card className="p-6">
@@ -128,10 +131,10 @@ export function BillLines({
                 <TableHead className="w-[120px]">Quantity *</TableHead>
                 <TableHead className="w-[120px]">Unit Price *</TableHead>
                 <TableHead className="w-[120px]">Subtotal</TableHead>
-                <TableHead className="w-[220px]">
-                  Analytic Account *
-                </TableHead>
-                {!isReadOnly && <TableHead className="w-[80px]">Action</TableHead>}
+                <TableHead className="w-[220px]">Analytic Account *</TableHead>
+                {!isReadOnly && (
+                  <TableHead className="w-[80px]">Action</TableHead>
+                )}
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -143,7 +146,12 @@ export function BillLines({
                 const missingAnalytic = !line.analyticalAccountId;
 
                 return (
-                  <TableRow key={index} className={missingAnalytic ? "bg-amber-50 dark:bg-amber-900/10" : ""}>
+                  <TableRow
+                    key={index}
+                    className={
+                      missingAnalytic ? "bg-amber-50 dark:bg-amber-900/10" : ""
+                    }
+                  >
                     <TableCell>
                       <Select
                         value={line.productId}
@@ -229,7 +237,9 @@ export function BillLines({
                         }
                         disabled={isReadOnly}
                       >
-                        <SelectTrigger className={missingAnalytic ? "border-amber-500" : ""}>
+                        <SelectTrigger
+                          className={missingAnalytic ? "border-amber-500" : ""}
+                        >
                           <SelectValue placeholder="Required" />
                         </SelectTrigger>
                         <SelectContent>

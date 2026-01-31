@@ -319,5 +319,6 @@ export const budgetsApi = {
   },
 };
 
-export { apiClient };
+// Export the configured client
+export const client = apiClient;
 export default apiClient;

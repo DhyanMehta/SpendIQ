@@ -11,7 +11,22 @@ export default function AuthCheck({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     // Check authentication immediately
     const checkAuth = () => {
-      const accessToken = localStorage.getItem("accessToken");
+      let accessToken = localStorage.getItem("accessToken");
+
+      if (!accessToken) {
+        // Fallback: Check cookies in case middleware let us through but localStorage is empty
+        // This prevents infinite loops where Middleware redirects to /dashboard (valid cookie)
+        // but Client redirects to /login (missing localStorage)
+        const cookieToken = document.cookie
+          .split("; ")
+          .find((row) => row.startsWith("accessToken="))
+          ?.split("=")[1];
+
+        if (cookieToken) {
+          accessToken = cookieToken;
+          localStorage.setItem("accessToken", cookieToken);
+        }
+      }
 
       if (!accessToken) {
         // Store the intended destination

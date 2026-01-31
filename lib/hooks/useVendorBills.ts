@@ -1,5 +1,5 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiClient } from '../api/client';
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { client } from "../api/client";
 
 export interface VendorBillLine {
   id?: string;
@@ -32,8 +32,8 @@ export interface VendorBill {
   };
   date: string;
   dueDate: string;
-  status: 'DRAFT' | 'POSTED' | 'CANCELLED';
-  paymentState: 'NOT_PAID' | 'PARTIAL' | 'PAID';
+  status: "DRAFT" | "POSTED" | "CANCELLED";
+  paymentState: "NOT_PAID" | "PARTIAL" | "PAID";
   totalAmount: number;
   taxAmount: number;
   lines: VendorBillLine[];
@@ -80,18 +80,18 @@ export interface VendorBillFilters {
 
 export function useVendorBills(filters?: VendorBillFilters) {
   return useQuery({
-    queryKey: ['vendor-bills', filters],
+    queryKey: ["vendor-bills", filters],
     queryFn: async () => {
       const params = new URLSearchParams();
-      if (filters?.page) params.append('page', filters.page.toString());
-      if (filters?.limit) params.append('limit', filters.limit.toString());
-      if (filters?.search) params.append('search', filters.search);
-      if (filters?.status) params.append('status', filters.status);
-      if (filters?.vendorId) params.append('vendorId', filters.vendorId);
-      if (filters?.startDate) params.append('startDate', filters.startDate);
-      if (filters?.endDate) params.append('endDate', filters.endDate);
+      if (filters?.page) params.append("page", filters.page.toString());
+      if (filters?.limit) params.append("limit", filters.limit.toString());
+      if (filters?.search) params.append("search", filters.search);
+      if (filters?.status) params.append("status", filters.status);
+      if (filters?.vendorId) params.append("vendorId", filters.vendorId);
+      if (filters?.startDate) params.append("startDate", filters.startDate);
+      if (filters?.endDate) params.append("endDate", filters.endDate);
 
-      const { data } = await apiClient.get(`/vendor-bills?${params.toString()}`);
+      const { data } = await client.get(`/vendor-bills?${params.toString()}`);
       return data;
     },
   });
@@ -99,9 +99,9 @@ export function useVendorBills(filters?: VendorBillFilters) {
 
 export function useVendorBill(id: string) {
   return useQuery({
-    queryKey: ['vendor-bill', id],
+    queryKey: ["vendor-bill", id],
     queryFn: async () => {
-      const { data } = await apiClient.get(`/vendor-bills/${id}`);
+      const { data } = await client.get(`/vendor-bills/${id}`);
       return data as VendorBill;
     },
     enabled: !!id,
@@ -113,11 +113,11 @@ export function useCreateVendorBill() {
 
   return useMutation({
     mutationFn: async (dto: CreateVendorBillDto) => {
-      const { data } = await apiClient.post('/vendor-bills', dto);
+      const { data } = await client.post("/vendor-bills", dto);
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vendor-bills'] });
+      queryClient.invalidateQueries({ queryKey: ["vendor-bills"] });
     },
   });
 }
@@ -126,13 +126,21 @@ export function useUpdateVendorBill() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, dto }: { id: string; dto: Partial<CreateVendorBillDto> }) => {
-      const { data } = await apiClient.patch(`/vendor-bills/${id}`, dto);
+    mutationFn: async ({
+      id,
+      dto,
+    }: {
+      id: string;
+      dto: Partial<CreateVendorBillDto>;
+    }) => {
+      const { data } = await client.patch(`/vendor-bills/${id}`, dto);
       return data;
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['vendor-bills'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-bill', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["vendor-bills"] });
+      queryClient.invalidateQueries({
+        queryKey: ["vendor-bill", variables.id],
+      });
     },
   });
 }
@@ -142,13 +150,13 @@ export function usePostVendorBill() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await apiClient.post(`/vendor-bills/${id}/post`);
+      const { data } = await client.post(`/vendor-bills/${id}/post`);
       return data;
     },
     onSuccess: (_data, id) => {
-      queryClient.invalidateQueries({ queryKey: ['vendor-bills'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-bill', id] });
-      queryClient.invalidateQueries({ queryKey: ['budgets'] });
+      queryClient.invalidateQueries({ queryKey: ["vendor-bills"] });
+      queryClient.invalidateQueries({ queryKey: ["vendor-bill", id] });
+      queryClient.invalidateQueries({ queryKey: ["budgets"] });
     },
   });
 }
@@ -157,13 +165,21 @@ export function useRegisterPayment() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async ({ id, dto }: { id: string; dto: RegisterPaymentDto }) => {
-      const { data } = await apiClient.post(`/vendor-bills/${id}/payment`, dto);
+    mutationFn: async ({
+      id,
+      dto,
+    }: {
+      id: string;
+      dto: RegisterPaymentDto;
+    }) => {
+      const { data } = await client.post(`/vendor-bills/${id}/payment`, dto);
       return data;
     },
     onSuccess: (_data, variables) => {
-      queryClient.invalidateQueries({ queryKey: ['vendor-bills'] });
-      queryClient.invalidateQueries({ queryKey: ['vendor-bill', variables.id] });
+      queryClient.invalidateQueries({ queryKey: ["vendor-bills"] });
+      queryClient.invalidateQueries({
+        queryKey: ["vendor-bill", variables.id],
+      });
     },
   });
 }
@@ -173,11 +189,11 @@ export function useDeleteVendorBill() {
 
   return useMutation({
     mutationFn: async (id: string) => {
-      const { data } = await apiClient.delete(`/vendor-bills/${id}`);
+      const { data } = await client.delete(`/vendor-bills/${id}`);
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['vendor-bills'] });
+      queryClient.invalidateQueries({ queryKey: ["vendor-bills"] });
     },
   });
 }

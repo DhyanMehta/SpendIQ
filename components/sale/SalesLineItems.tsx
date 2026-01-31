@@ -1,7 +1,7 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { apiClient } from "@/lib/api/client";
+import { client } from "@/lib/api/client";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -38,7 +38,7 @@ export function SalesLineItems({
   const { data: products } = useQuery({
     queryKey: ["products"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/products");
+      const { data } = await client.get("/products");
       return data;
     },
   });
@@ -46,7 +46,7 @@ export function SalesLineItems({
   const { data: analyticalAccounts } = useQuery({
     queryKey: ["analytical-accounts"],
     queryFn: async () => {
-      const { data } = await apiClient.get("/analytical-accounts");
+      const { data } = await client.get("/analytical-accounts");
       return data;
     },
   });
