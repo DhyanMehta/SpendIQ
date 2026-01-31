@@ -9,6 +9,7 @@ import { UpdateContactDto } from "./dto/update-contact.dto";
 import { ContactQueryDto } from "./dto/contact-query.dto";
 import { Status } from "@prisma/client";
 import { MailService } from "../mail/mail.service";
+import * as bcrypt from "bcrypt";
 
 @Injectable()
 export class ContactsService {
@@ -27,8 +28,36 @@ export class ContactsService {
       throw new ConflictException("Email already in use");
     }
 
+    // Check if loginId is already in use (if provided)
+    if (createContactDto.loginId) {
+      const existingUser = await this.prisma.user.findUnique({
+        where: { loginId: createContactDto.loginId },
+      });
+      if (existingUser) {
+        throw new ConflictException("Login ID already in use");
+      }
+    }
+
     // Handle tags
     const tagConnections = await this.handleTags(createContactDto.tags || []);
+
+    // Create portal user if credentials provided
+    let portalUser = null;
+    if (createContactDto.loginId && createContactDto.password) {
+      // Hash password
+      const hashedPassword = await bcrypt.hash(createContactDto.password, 10);
+
+      // Create user with PORTAL_USER role
+      portalUser = await this.prisma.user.create({
+        data: {
+          loginId: createContactDto.loginId,
+          email: createContactDto.email,
+          password: hashedPassword,
+          name: createContactDto.name,
+          role: "PORTAL_USER",
+        },
+      });
+    }
 
     const contact = await this.prisma.contact.create({
       data: {
@@ -41,12 +70,14 @@ export class ContactsService {
         country: createContactDto.country,
         pincode: createContactDto.pincode,
         type: createContactDto.type,
-        isPortalUser: createContactDto.isPortalUser || false,
+        isPortalUser: portalUser
+          ? true
+          : createContactDto.isPortalUser || false,
         imageUrl: createContactDto.imageUrl,
+        portalUserId: portalUser?.id,
         tags: {
           create: tagConnections,
         },
-        createdById: userId,
       },
       include: {
         tags: {
@@ -54,13 +85,24 @@ export class ContactsService {
             tag: true,
           },
         },
+        portalUser: true,
       },
     });
 
-    // If portal access enabled, send invitation email
-    if (contact.isPortalUser && !contact.portalUserId) {
-      // TODO: Create portal user and send invitation
-      // This would be handled separately via enablePortalAccess method
+    // Send welcome email if portal user was created
+    if (portalUser) {
+      try {
+        await this.mailService.sendPortalWelcomeEmail(
+          contact.email,
+          contact.name,
+          createContactDto.loginId!,
+          createContactDto.password!, // Send plain password in email (only time it's available)
+          contact.type,
+        );
+      } catch (error) {
+        console.error("Failed to send welcome email:", error);
+        // Don't fail the contact creation if email fails
+      }
     }
 
     return contact;

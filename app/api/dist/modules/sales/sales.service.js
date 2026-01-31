@@ -222,6 +222,77 @@ let SalesService = class SalesService {
         });
         return { message: "Sales Order deleted successfully" };
     }
+    async createInvoice(id, userId) {
+        const salesOrder = await this.prisma.salesOrder.findUnique({
+            where: { id },
+            include: {
+                customer: true,
+                lines: {
+                    include: {
+                        product: true,
+                    },
+                },
+            },
+        });
+        if (!salesOrder) {
+            throw new common_1.NotFoundException("Sales Order not found");
+        }
+        if (salesOrder.status !== "CONFIRMED") {
+            throw new common_1.BadRequestException("Only confirmed Sales Orders can generate invoices");
+        }
+        const existingInvoice = await this.prisma.invoice.findFirst({
+            where: { salesOrderId: id },
+        });
+        if (existingInvoice) {
+            throw new common_1.BadRequestException("Invoice already exists for this Sales Order");
+        }
+        const count = await this.prisma.invoice.count({
+            where: { type: "OUT_INVOICE" },
+        });
+        const invoiceNumber = `INV/${new Date().getFullYear()}/${String(count + 1).padStart(4, "0")}`;
+        const invoice = await this.prisma.invoice.create({
+            data: {
+                type: "OUT_INVOICE",
+                number: invoiceNumber,
+                partnerId: salesOrder.customerId,
+                date: new Date(),
+                dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
+                status: "DRAFT",
+                paymentState: "NOT_PAID",
+                totalAmount: salesOrder.totalAmount,
+                taxAmount: 0,
+                salesOrderId: id,
+                createdById: userId,
+                lines: {
+                    create: salesOrder.lines.map((line) => {
+                        var _a;
+                        return ({
+                            productId: line.productId,
+                            label: ((_a = line.product) === null || _a === void 0 ? void 0 : _a.name) || line.description || "Product",
+                            quantity: line.quantity,
+                            priceUnit: line.unitPrice,
+                            subtotal: line.subtotal,
+                            taxRate: 0,
+                        });
+                    }),
+                },
+            },
+            include: {
+                lines: {
+                    include: {
+                        product: true,
+                    },
+                },
+                partner: true,
+                salesOrder: true,
+            },
+        });
+        await this.prisma.salesOrder.update({
+            where: { id },
+            data: { status: "INVOICED" },
+        });
+        return invoice;
+    }
 };
 exports.SalesService = SalesService;
 exports.SalesService = SalesService = __decorate([

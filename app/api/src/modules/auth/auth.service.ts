@@ -53,7 +53,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private mailService: MailService,
-  ) { }
+  ) {}
 
   /**
    * Sends a One-Time Password (OTP) to the specified email address
@@ -140,11 +140,15 @@ export class AuthService {
     });
 
     if (!otpRecord) {
-      throw new UnauthorizedException("Wrong OTP. Please check the code and try again.");
+      throw new UnauthorizedException(
+        "Wrong OTP. Please check the code and try again.",
+      );
     }
 
     if (otpRecord.expiresAt < new Date()) {
-      throw new UnauthorizedException("OTP has expired. Please request a new code.");
+      throw new UnauthorizedException(
+        "OTP has expired. Please request a new code.",
+      );
     }
 
     // Check for existing loginId
@@ -252,6 +256,89 @@ export class AuthService {
         email: user.email,
         name: user.name,
         role: user.role,
+      },
+    };
+  }
+
+  /**
+   * Authenticates a portal user (customer/vendor) and generates a JWT access token
+   *
+   * This method:
+   * 1. Looks up user by loginId
+   * 2. Validates password using bcrypt comparison
+   * 3. Verifies user has PORTAL_USER role
+   * 4. Fetches associated contact information
+   * 5. Generates JWT with user id, email, role, and contactId in payload
+   * 6. Returns access token, user info, and contact info
+   *
+   * @param {LoginDto} loginDto - Login credentials containing:
+   *   - loginId: User's unique login identifier
+   *   - password: User's plain text password
+   * @returns {Promise<{access_token: string, user: object, contact: object}>}
+   *          JWT token, user data, and contact data
+   * @throws {UnauthorizedException} If loginId doesn't exist, password is incorrect, or user is not a portal user
+   */
+  async portalLogin(loginDto: LoginDto) {
+    const user = await this.prisma.user.findUnique({
+      where: { loginId: loginDto.loginId },
+      include: {
+        contact: true,
+      },
+    });
+
+    const invalidCredsError = new UnauthorizedException(
+      "Invalid Login Id or Password",
+    );
+
+    if (!user) {
+      throw invalidCredsError;
+    }
+
+    // Verify user has PORTAL_USER role
+    if (user.role !== Role.PORTAL_USER) {
+      throw new UnauthorizedException(
+        "Access denied. This login is for portal users only.",
+      );
+    }
+
+    const isPasswordValid = await bcrypt.compare(
+      loginDto.password,
+      user.password,
+    );
+
+    if (!isPasswordValid) {
+      throw invalidCredsError;
+    }
+
+    // Verify user has associated contact
+    if (!user.contact) {
+      throw new UnauthorizedException(
+        "No contact associated with this portal user.",
+      );
+    }
+
+    const payload = {
+      sub: user.id,
+      email: user.email,
+      role: user.role,
+      contactId: user.contact.id,
+    };
+
+    return {
+      access_token: this.jwtService.sign(payload),
+      user: {
+        id: user.id,
+        loginId: user.loginId,
+        email: user.email,
+        name: user.name,
+        role: user.role,
+      },
+      contact: {
+        id: user.contact.id,
+        name: user.contact.name,
+        email: user.contact.email,
+        type: user.contact.type,
+        imageUrl: user.contact.imageUrl,
       },
     };
   }

@@ -1,13 +1,5 @@
-declare class PurchaseOrderLineDto {
-    productId: string;
-    description: string;
-    quantity: number;
-    unitPrice: number;
-    analyticalAccountId?: string;
-}
-export declare class UpdatePurchaseOrderDto {
-    vendorId?: string;
-    orderDate?: Date;
-    lines?: PurchaseOrderLineDto[];
+import { CreatePurchaseOrderDto } from "./create-purchase-order.dto";
+declare const UpdatePurchaseOrderDto_base: import("@nestjs/mapped-types").MappedType<Partial<CreatePurchaseOrderDto>>;
+export declare class UpdatePurchaseOrderDto extends UpdatePurchaseOrderDto_base {
 }
 export {};

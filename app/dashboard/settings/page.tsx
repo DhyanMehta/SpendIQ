@@ -43,6 +43,18 @@ import {
 } from "lucide-react";
 import { useState, useEffect } from "react";
 import { apiRequest } from "@/lib/api";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  useProductCategories,
+  useCreateProductCategory,
+} from "@/lib/hooks/useProducts";
 
 export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState("users");
@@ -77,7 +89,7 @@ export default function SettingsPage() {
         onValueChange={setActiveTab}
         className="space-y-4"
       >
-        <TabsList className="grid w-full grid-cols-7 lg:w-auto">
+        <TabsList className="grid w-full grid-cols-8 lg:w-auto">
           <TabsTrigger value="users">
             <Users className="h-4 w-4 mr-2" />
             Users
@@ -89,6 +101,10 @@ export default function SettingsPage() {
           <TabsTrigger value="products" disabled={!isAdmin}>
             <Package className="h-4 w-4 mr-2" />
             Products
+          </TabsTrigger>
+          <TabsTrigger value="categories" disabled={!isAdmin}>
+            <Package className="h-4 w-4 mr-2" />
+            Categories
           </TabsTrigger>
           <TabsTrigger value="analytical" disabled={!isAdmin}>
             <Target className="h-4 w-4 mr-2" />
@@ -118,6 +134,10 @@ export default function SettingsPage() {
 
         <TabsContent value="products" className="space-y-4">
           <ProductsTab />
+        </TabsContent>
+
+        <TabsContent value="categories" className="space-y-4">
+          <CategoriesTab />
         </TabsContent>
 
         <TabsContent value="analytical" className="space-y-4">
@@ -382,7 +402,9 @@ function ProductsTab() {
           </div>
           <div className="flex items-center gap-2 text-amber-700 dark:text-amber-500">
             <Lock className="h-4 w-4" />
-            <span>Business Nature cannot be changed after product creation</span>
+            <span>
+              Business Nature cannot be changed after product creation
+            </span>
           </div>
         </div>
 
@@ -523,10 +545,19 @@ function BudgetControlTab() {
       <CardContent className="space-y-6">
         <div className="p-4 bg-muted rounded-lg space-y-3 text-sm">
           <h4 className="font-medium mb-2">Budget Rules</h4>
-          <div>✓ Budgets apply only to <strong>Expense-type products</strong></div>
-          <div>✓ Budget checking happens only on <strong>posted purchase invoices</strong></div>
-          <div>✓ <strong>Approved budgets cannot be edited</strong></div>
-          <div>✓ Sales transactions <strong>never impact budgets</strong></div>
+          <div>
+            ✓ Budgets apply only to <strong>Expense-type products</strong>
+          </div>
+          <div>
+            ✓ Budget checking happens only on{" "}
+            <strong>posted purchase invoices</strong>
+          </div>
+          <div>
+            ✓ <strong>Approved budgets cannot be edited</strong>
+          </div>
+          <div>
+            ✓ Sales transactions <strong>never impact budgets</strong>
+          </div>
           <div>✓ Payments do not affect budget tracking</div>
         </div>
 
@@ -543,15 +574,20 @@ function BudgetControlTab() {
               </SelectContent>
             </Select>
             <p className="text-sm text-muted-foreground">
-              Selected: {budgetPeriod === "MONTHLY" ? "Monthly" : "Yearly"} budget tracking
+              Selected: {budgetPeriod === "MONTHLY" ? "Monthly" : "Yearly"}{" "}
+              budget tracking
             </p>
           </div>
 
           <div className="p-4 border rounded-lg space-y-2">
             <h4 className="font-medium">Budget vs Actual Flow</h4>
             <div className="text-sm space-y-1 text-muted-foreground">
-              <div>1. Budget stores planned expense limits per analytical account</div>
-              <div>2. Posted purchase invoices contribute to actual amounts</div>
+              <div>
+                1. Budget stores planned expense limits per analytical account
+              </div>
+              <div>
+                2. Posted purchase invoices contribute to actual amounts
+              </div>
               <div>3. Analytical accounts link budget with invoice actuals</div>
               <div>4. System alerts when actuals exceed budget limits</div>
             </div>
@@ -668,6 +704,143 @@ function SystemInfoTab() {
           </div>
         </div>
       </CardContent>
+    </Card>
+  );
+}
+
+// 3.5 Categories Management
+function CategoriesTab() {
+  const { data: categories, isLoading } = useProductCategories();
+  const { mutate: createCategory, isPending: isCreating } =
+    useCreateProductCategory();
+  const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState("");
+
+  const handleCreateCategory = () => {
+    if (!newCategoryName.trim()) return;
+    createCategory(newCategoryName, {
+      onSuccess: () => {
+        setIsDialogOpen(false);
+        setNewCategoryName("");
+      },
+    });
+  };
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between">
+        <div>
+          <CardTitle>Product Categories</CardTitle>
+          <CardDescription>
+            Manage product categories for better organization and filtering
+          </CardDescription>
+        </div>
+        <Button size="sm" onClick={() => setIsDialogOpen(true)}>
+          <Plus className="mr-2 h-4 w-4" /> Add Category
+        </Button>
+      </CardHeader>
+      <CardContent>
+        <div className="mb-4 p-4 bg-muted rounded-lg space-y-2 text-sm">
+          <div>
+            <strong>Purpose:</strong> Organize products into logical groups
+          </div>
+          <div>
+            <strong>Usage:</strong> Categories can be assigned to products
+            during creation or editing
+          </div>
+          <div>
+            <strong>Filtering:</strong> Use categories to filter products on the
+            products page
+          </div>
+        </div>
+
+        {isLoading ? (
+          <div className="text-center py-8 text-muted-foreground">
+            Loading categories...
+          </div>
+        ) : (
+          <Table>
+            <TableHeader>
+              <TableRow>
+                <TableHead>Category Name</TableHead>
+                <TableHead>Products Count</TableHead>
+                <TableHead className="text-right">Actions</TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {categories && categories.length > 0 ? (
+                categories.map((category: any) => (
+                  <TableRow key={category.id}>
+                    <TableCell className="font-medium">
+                      {category.name}
+                    </TableCell>
+                    <TableCell>
+                      {category._count?.products || 0} products
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button variant="ghost" size="sm">
+                        <Edit2 className="h-4 w-4" />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              ) : (
+                <TableRow>
+                  <TableCell colSpan={3} className="text-center py-8">
+                    <div className="text-muted-foreground">
+                      No categories yet. Create your first category to get
+                      started.
+                    </div>
+                  </TableCell>
+                </TableRow>
+              )}
+            </TableBody>
+          </Table>
+        )}
+      </CardContent>
+
+      <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Create Product Category</DialogTitle>
+            <DialogDescription>
+              Add a new category to organize your products.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-4 items-center gap-4">
+              <Label htmlFor="name" className="text-right">
+                Name
+              </Label>
+              <Input
+                id="name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") handleCreateCategory();
+                }}
+                className="col-span-3"
+                placeholder="e.g., Electronics, Furniture"
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setIsDialogOpen(false)}
+              disabled={isCreating}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleCreateCategory}
+              disabled={!newCategoryName.trim() || isCreating}
+            >
+              {isCreating ? "Creating..." : "Create Category"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 }

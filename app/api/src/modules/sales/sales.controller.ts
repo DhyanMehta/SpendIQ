@@ -18,7 +18,7 @@ import { CurrentUser } from "../../common/decorators/current-user.decorator";
 @Controller("sales")
 @UseGuards(JwtAuthGuard)
 export class SalesController {
-  constructor(private readonly salesService: SalesService) {}
+  constructor(private readonly salesService: SalesService) { }
 
   @Post()
   create(
@@ -71,10 +71,10 @@ export class SalesController {
   }
 
   @Post(":id/create-invoice")
-  createInvoice(@Param("id") id: string) {
-    // This will be implemented when InvoicesService is ready
-    // For now, return a placeholder or call service method if it existed
-    // return this.salesService.createInvoice(id);
-    return { message: "Invoice creation logic to be linked" };
+  createInvoice(
+    @Param("id") id: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.salesService.createInvoice(id, user.id);
   }
 }

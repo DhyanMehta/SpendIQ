@@ -12,51 +12,47 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.CreatePurchaseOrderDto = void 0;
 const class_validator_1 = require("class-validator");
 const class_transformer_1 = require("class-transformer");
-class PurchaseOrderLineDto {
+class CreatePurchaseOrderLineDto {
 }
 __decorate([
+    (0, class_validator_1.IsUUID)(),
+    (0, class_validator_1.IsNotEmpty)(),
+    __metadata("design:type", String)
+], CreatePurchaseOrderLineDto.prototype, "productId", void 0);
+__decorate([
     (0, class_validator_1.IsString)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
-], PurchaseOrderLineDto.prototype, "productId", void 0);
-__decorate([
-    (0, class_validator_1.IsString)(),
-    (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", String)
-], PurchaseOrderLineDto.prototype, "description", void 0);
+], CreatePurchaseOrderLineDto.prototype, "description", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0.01),
     __metadata("design:type", Number)
-], PurchaseOrderLineDto.prototype, "quantity", void 0);
+], CreatePurchaseOrderLineDto.prototype, "quantity", void 0);
 __decorate([
     (0, class_validator_1.IsNumber)(),
-    (0, class_validator_1.Min)(0),
     __metadata("design:type", Number)
-], PurchaseOrderLineDto.prototype, "unitPrice", void 0);
+], CreatePurchaseOrderLineDto.prototype, "unitPrice", void 0);
 __decorate([
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsUUID)(),
     (0, class_validator_1.IsOptional)(),
     __metadata("design:type", String)
-], PurchaseOrderLineDto.prototype, "analyticalAccountId", void 0);
+], CreatePurchaseOrderLineDto.prototype, "analyticalAccountId", void 0);
 class CreatePurchaseOrderDto {
 }
 exports.CreatePurchaseOrderDto = CreatePurchaseOrderDto;
 __decorate([
-    (0, class_validator_1.IsString)(),
+    (0, class_validator_1.IsUUID)(),
     (0, class_validator_1.IsNotEmpty)(),
     __metadata("design:type", String)
 ], CreatePurchaseOrderDto.prototype, "vendorId", void 0);
 __decorate([
-    (0, class_validator_1.IsDate)(),
-    (0, class_transformer_1.Type)(() => Date),
-    (0, class_validator_1.IsNotEmpty)(),
-    __metadata("design:type", Date)
+    (0, class_validator_1.IsDateString)(),
+    __metadata("design:type", String)
 ], CreatePurchaseOrderDto.prototype, "orderDate", void 0);
 __decorate([
     (0, class_validator_1.IsArray)(),
     (0, class_validator_1.ValidateNested)({ each: true }),
-    (0, class_transformer_1.Type)(() => PurchaseOrderLineDto),
+    (0, class_transformer_1.Type)(() => CreatePurchaseOrderLineDto),
     __metadata("design:type", Array)
 ], CreatePurchaseOrderDto.prototype, "lines", void 0);
 //# sourceMappingURL=create-purchase-order.dto.js.map

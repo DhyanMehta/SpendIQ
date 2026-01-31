@@ -33,6 +33,48 @@ export class PortalService {
     return user?.contact?.id || null;
   }
 
+  async getProfile(userId: string) {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      include: {
+        contact: {
+          include: {
+            tags: {
+              include: {
+                tag: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    if (!user || !user.contact) {
+      return null;
+    }
+
+    return {
+      id: user.contact.id,
+      name: user.contact.name,
+      email: user.contact.email,
+      phone: user.contact.phone,
+      type: user.contact.type,
+      imageUrl: user.contact.imageUrl,
+      address: {
+        street: user.contact.street,
+        city: user.contact.city,
+        state: user.contact.state,
+        country: user.contact.country,
+        pincode: user.contact.pincode,
+      },
+      tags: user.contact.tags.map((ct) => ({
+        id: ct.tag.id,
+        name: ct.tag.name,
+        color: ct.tag.color,
+      })),
+    };
+  }
+
   async getDashboardData(userId: string) {
     const contactId = await this.getContactId(userId);
 
@@ -55,11 +97,11 @@ export class PortalService {
     });
 
     const outstandingInvoices = invoices.filter(
-      (inv) => inv.paymentState !== "PAID"
+      (inv) => inv.paymentState !== "PAID",
     );
     const outstandingBalance = outstandingInvoices.reduce(
       (sum, inv) => sum + Number(inv.totalAmount),
-      0
+      0,
     );
 
     // Get PO count
@@ -136,37 +178,81 @@ export class PortalService {
       return [];
     }
 
+    // Get OUT_INVOICE (Customer Invoices) - these are the ones customers need to pay
     const invoices = await this.prisma.invoice.findMany({
-      where: { partnerId: contactId },
+      where: {
+        partnerId: contactId,
+        type: "OUT_INVOICE", // Only customer invoices
+      },
       include: {
         lines: {
           include: {
             product: true,
           },
         },
+        salesOrder: true, // Include linked sales order info
+        payments: {
+          include: {
+            payment: true, // Include payment details
+          },
+        },
       },
       orderBy: { date: "desc" },
     });
 
-    return invoices.map((inv) => ({
-      id: inv.id,
-      number: inv.number,
-      type: inv.type,
-      date: inv.date,
-      dueDate: inv.dueDate,
-      total: Number(inv.totalAmount),
-      tax: Number(inv.taxAmount),
-      status: inv.status,
-      paymentState: inv.paymentState,
-      lines: inv.lines.map((line) => ({
-        id: line.id,
-        product: line.product?.name,
-        description: line.label,
-        quantity: Number(line.quantity),
-        unitPrice: Number(line.priceUnit),
-        amount: Number(line.subtotal),
-      })),
-    }));
+    return invoices.map((inv) => {
+      const totalAmount = Number(inv.totalAmount);
+
+      // Calculate paid amount from payment allocations
+      const paidViaCash = inv.payments
+        .filter((pa) => pa.payment.method === "CASH" && pa.payment.status === "POSTED")
+        .reduce((sum, pa) => sum + Number(pa.amount), 0);
+
+      const paidViaBank = inv.payments
+        .filter((pa) => ["BANK_TRANSFER", "RAZORPAY"].includes(pa.payment.method) && pa.payment.status === "POSTED")
+        .reduce((sum, pa) => sum + Number(pa.amount), 0);
+
+      const totalPaid = paidViaCash + paidViaBank;
+      const amountDue = totalAmount - totalPaid;
+
+      // Determine payment state based on amount due
+      // Paid: amount due = 0
+      // Partial: amount due < Invoice Total (but > 0)
+      // Not Paid: amount due = Invoice Total
+      let calculatedPaymentState: "PAID" | "PARTIAL" | "NOT_PAID";
+      if (amountDue <= 0) {
+        calculatedPaymentState = "PAID";
+      } else if (amountDue < totalAmount) {
+        calculatedPaymentState = "PARTIAL";
+      } else {
+        calculatedPaymentState = "NOT_PAID";
+      }
+
+      return {
+        id: inv.id,
+        number: inv.number,
+        type: inv.type,
+        date: inv.date,
+        dueDate: inv.dueDate,
+        total: totalAmount,
+        tax: Number(inv.taxAmount),
+        status: inv.status,
+        paymentState: calculatedPaymentState,
+        paidViaCash,
+        paidViaBank,
+        totalPaid,
+        amountDue: Math.max(0, amountDue), // Ensure non-negative
+        salesOrderRef: inv.salesOrder?.reference || null,
+        lines: inv.lines.map((line) => ({
+          id: line.id,
+          product: line.product?.name,
+          description: line.label,
+          quantity: Number(line.quantity),
+          unitPrice: Number(line.priceUnit),
+          amount: Number(line.subtotal),
+        })),
+      };
+    });
   }
 
   async getMyPurchaseOrders(userId: string) {
@@ -306,7 +392,7 @@ export class PortalService {
     }));
   }
 
-  async payInvoice(invoiceId: string, userId: string) {
+  async payInvoice(invoiceId: string, userId: string, paymentAmount?: number) {
     const contactId = await this.getContactId(userId);
 
     if (!contactId) {
@@ -319,11 +405,18 @@ export class PortalService {
       include: { contact: true },
     });
 
-    // Verify invoice belongs to this contact
+    // Verify invoice belongs to this contact with payment allocations
     const invoice = await this.prisma.invoice.findFirst({
       where: {
         id: invoiceId,
         partnerId: contactId,
+      },
+      include: {
+        payments: {
+          include: {
+            payment: true,
+          },
+        },
       },
     });
 
@@ -335,7 +428,28 @@ export class PortalService {
       return { success: false, message: "Invoice is already paid" };
     }
 
-    const amount = Number(invoice.totalAmount);
+    // Calculate amount already paid
+    const totalPaid = invoice.payments
+      .filter((pa) => pa.payment.status === "POSTED")
+      .reduce((sum, pa) => sum + Number(pa.amount), 0);
+
+    const totalAmount = Number(invoice.totalAmount);
+    const amountDue = totalAmount - totalPaid;
+
+    // Determine the amount to pay (either specified amount or full due amount)
+    let amount = paymentAmount ?? amountDue;
+
+    // Validate payment amount
+    if (amount <= 0) {
+      return { success: false, message: "Invalid payment amount" };
+    }
+
+    if (amount > amountDue) {
+      return {
+        success: false,
+        message: `Payment amount (${amount}) exceeds amount due (${amountDue})`
+      };
+    }
 
     // Check if Razorpay is configured
     if (!this.razorpay) {
@@ -350,12 +464,14 @@ export class PortalService {
       const order = await this.razorpay.orders.create({
         amount: Math.round(amount * 100), // Convert to paise
         currency: "INR",
-        receipt: `inv_${invoice.number}`,
+        receipt: `inv_${invoice.number}_${Date.now()}`,
         notes: {
           invoiceId: invoice.id,
           invoiceNumber: invoice.number,
           userId: userId,
           contactId: contactId,
+          paymentAmount: amount.toString(),
+          isPartialPayment: (amount < amountDue).toString(),
         },
       });
 
@@ -366,6 +482,10 @@ export class PortalService {
         amountInPaise: Math.round(amount * 100),
         currency: "INR",
         invoiceNumber: invoice.number,
+        invoiceTotal: totalAmount,
+        totalPaid: totalPaid,
+        amountDue: amountDue,
+        isPartialPayment: amount < amountDue,
         keyId: this.configService.get<string>("RAZORPAY_KEY_ID"),
         prefill: {
           name: user?.contact?.name || user?.name || "",
@@ -388,6 +508,7 @@ export class PortalService {
     razorpayOrderId: string,
     razorpayPaymentId: string,
     razorpaySignature: string,
+    paymentAmount: number,
   ) {
     const contactId = await this.getContactId(userId);
 
@@ -395,11 +516,18 @@ export class PortalService {
       return { success: false, message: "No contact linked to user" };
     }
 
-    // Verify invoice belongs to this contact
+    // Verify invoice belongs to this contact with existing payments
     const invoice = await this.prisma.invoice.findFirst({
       where: {
         id: invoiceId,
         partnerId: contactId,
+      },
+      include: {
+        payments: {
+          include: {
+            payment: true,
+          },
+        },
       },
     });
 
@@ -418,7 +546,8 @@ export class PortalService {
       return { success: false, message: "Payment verification failed" };
     }
 
-    const amount = Number(invoice.totalAmount);
+    // Use the specified payment amount
+    const amount = paymentAmount;
 
     // Create payment record
     const paymentRef = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
@@ -444,19 +573,47 @@ export class PortalService {
       },
     });
 
-    // Update invoice payment state to PAID
+    // Calculate new total paid after this payment
+    const previousPaid = invoice.payments
+      .filter((pa) => pa.payment.status === "POSTED")
+      .reduce((sum, pa) => sum + Number(pa.amount), 0);
+
+    const totalPaidNow = previousPaid + amount;
+    const invoiceTotal = Number(invoice.totalAmount);
+    const amountDueNow = invoiceTotal - totalPaidNow;
+
+    // Determine payment state based on amount due
+    // Paid: amount due = 0
+    // Partial: amount due < Invoice Total (but > 0)
+    // Not Paid: amount due = Invoice Total
+    let newPaymentState: "PAID" | "PARTIAL" | "NOT_PAID";
+    if (amountDueNow <= 0) {
+      newPaymentState = "PAID";
+    } else if (amountDueNow < invoiceTotal) {
+      newPaymentState = "PARTIAL";
+    } else {
+      newPaymentState = "NOT_PAID";
+    }
+
+    // Update invoice payment state
     await this.prisma.invoice.update({
       where: { id: invoiceId },
-      data: { paymentState: "PAID" },
+      data: { paymentState: newPaymentState },
     });
 
     return {
       success: true,
-      message: "Payment successful",
+      message: newPaymentState === "PAID"
+        ? "Payment successful - Invoice fully paid"
+        : "Payment successful - Partial payment recorded",
       paymentId: payment.id,
       paymentReference: paymentRef,
       amountPaid: amount,
       invoiceNumber: invoice.number,
+      invoiceTotal: invoiceTotal,
+      totalPaid: totalPaidNow,
+      amountDue: Math.max(0, amountDueNow),
+      paymentState: newPaymentState,
     };
   }
 }

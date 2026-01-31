@@ -1,4 +1,13 @@
-import { Controller, Post, Body, HttpCode, HttpStatus, Get, UseGuards, Request } from "@nestjs/common";
+import {
+  Controller,
+  Post,
+  Body,
+  HttpCode,
+  HttpStatus,
+  Get,
+  UseGuards,
+  Request,
+} from "@nestjs/common";
 import { AuthService } from "./auth.service";
 import { RegisterDto } from "./dto/register.dto";
 import { LoginDto } from "./dto/login.dto";
@@ -7,7 +16,7 @@ import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
 
 @Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) { }
+  constructor(private readonly authService: AuthService) {}
 
   @Post("send-otp")
   async sendOtp(@Body() body: SendOtpDto) {
@@ -23,6 +32,12 @@ export class AuthController {
   @Post("login")
   async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
+  }
+
+  @HttpCode(HttpStatus.OK)
+  @Post("portal/login")
+  async portalLogin(@Body() loginDto: LoginDto) {
+    return this.authService.portalLogin(loginDto);
   }
 
   @UseGuards(JwtAuthGuard)

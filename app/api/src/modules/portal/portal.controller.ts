@@ -16,12 +16,18 @@ import { Role } from "@prisma/client";
 @Controller("portal")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PortalController {
-  constructor(private readonly portalService: PortalService) { }
+  constructor(private readonly portalService: PortalService) {}
 
   @Get("dashboard")
   @Roles(Role.PORTAL_USER, Role.ADMIN)
   getDashboard(@Request() req) {
     return this.portalService.getDashboardData(req.user.id);
+  }
+
+  @Get("profile")
+  @Roles(Role.PORTAL_USER, Role.ADMIN)
+  getProfile(@Request() req) {
+    return this.portalService.getProfile(req.user.id);
   }
 
   @Get("invoices")
@@ -56,8 +62,12 @@ export class PortalController {
 
   @Post("invoices/:id/pay")
   @Roles(Role.PORTAL_USER)
-  payInvoice(@Param("id") id: string, @Request() req) {
-    return this.portalService.payInvoice(id, req.user.id);
+  payInvoice(
+    @Param("id") id: string,
+    @Body() body: { amount?: number },
+    @Request() req,
+  ) {
+    return this.portalService.payInvoice(id, req.user.id, body?.amount);
   }
 
   @Post("invoices/:id/verify-payment")
@@ -69,6 +79,7 @@ export class PortalController {
       razorpay_order_id: string;
       razorpay_payment_id: string;
       razorpay_signature: string;
+      amount: number;
     },
     @Request() req,
   ) {
@@ -78,6 +89,7 @@ export class PortalController {
       body.razorpay_order_id,
       body.razorpay_payment_id,
       body.razorpay_signature,
+      body.amount,
     );
   }
 }

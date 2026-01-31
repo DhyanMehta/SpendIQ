@@ -10,14 +10,33 @@ export declare class InvoicesService {
     private readonly salesService;
     constructor(prisma: PrismaService, journalEntriesService: JournalEntriesService, salesService: SalesService);
     create(createDto: CreateInvoiceDto, userId?: string): Promise<{
+        partner: {
+            id: string;
+            type: import(".prisma/client").$Enums.ContactType;
+            status: import(".prisma/client").$Enums.Status;
+            createdAt: Date;
+            updatedAt: Date;
+            createdById: string | null;
+            name: string;
+            email: string;
+            phone: string | null;
+            street: string | null;
+            city: string | null;
+            state: string | null;
+            country: string | null;
+            pincode: string | null;
+            imageUrl: string | null;
+            portalUserId: string | null;
+            isPortalUser: boolean;
+        };
         lines: ({
             product: {
                 id: string;
-                name: string;
+                status: import(".prisma/client").$Enums.Status;
                 createdAt: Date;
                 updatedAt: Date;
                 createdById: string | null;
-                status: import(".prisma/client").$Enums.Status;
+                name: string;
                 description: string | null;
                 salesPrice: Prisma.Decimal;
                 purchasePrice: Prisma.Decimal;
@@ -26,51 +45,32 @@ export declare class InvoicesService {
             };
         } & {
             id: string;
-            analyticAccountId: string | null;
-            priceUnit: Prisma.Decimal;
             subtotal: Prisma.Decimal;
-            label: string;
             invoiceId: string;
             productId: string | null;
+            label: string;
             quantity: Prisma.Decimal;
+            priceUnit: Prisma.Decimal;
             taxRate: Prisma.Decimal;
+            analyticAccountId: string | null;
         })[];
-        partner: {
-            id: string;
-            email: string;
-            name: string;
-            createdAt: Date;
-            updatedAt: Date;
-            state: string | null;
-            createdById: string | null;
-            type: import(".prisma/client").$Enums.ContactType;
-            status: import(".prisma/client").$Enums.Status;
-            phone: string | null;
-            street: string | null;
-            city: string | null;
-            country: string | null;
-            pincode: string | null;
-            imageUrl: string | null;
-            portalUserId: string | null;
-            isPortalUser: boolean;
-        };
     } & {
         number: string;
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        type: import(".prisma/client").$Enums.InvoiceType;
         partnerId: string;
         date: Date;
+        dueDate: Date;
+        status: import(".prisma/client").$Enums.InvoiceStatus;
+        paymentState: import(".prisma/client").$Enums.PaymentState;
         totalAmount: Prisma.Decimal;
         taxAmount: Prisma.Decimal;
-        createdById: string | null;
-        type: import(".prisma/client").$Enums.InvoiceType;
-        status: import(".prisma/client").$Enums.InvoiceStatus;
-        dueDate: Date;
-        paymentState: import(".prisma/client").$Enums.PaymentState;
         salesOrderId: string | null;
         purchaseOrderId: string | null;
         journalEntryId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        createdById: string | null;
     }>;
     findAll(filters: {
         page: number;
@@ -83,17 +83,17 @@ export declare class InvoicesService {
         data: ({
             partner: {
                 id: string;
-                email: string;
-                name: string;
-                createdAt: Date;
-                updatedAt: Date;
-                state: string | null;
-                createdById: string | null;
                 type: import(".prisma/client").$Enums.ContactType;
                 status: import(".prisma/client").$Enums.Status;
+                createdAt: Date;
+                updatedAt: Date;
+                createdById: string | null;
+                name: string;
+                email: string;
                 phone: string | null;
                 street: string | null;
                 city: string | null;
+                state: string | null;
                 country: string | null;
                 pincode: string | null;
                 imageUrl: string | null;
@@ -103,20 +103,20 @@ export declare class InvoicesService {
         } & {
             number: string;
             id: string;
-            createdAt: Date;
-            updatedAt: Date;
+            type: import(".prisma/client").$Enums.InvoiceType;
             partnerId: string;
             date: Date;
+            dueDate: Date;
+            status: import(".prisma/client").$Enums.InvoiceStatus;
+            paymentState: import(".prisma/client").$Enums.PaymentState;
             totalAmount: Prisma.Decimal;
             taxAmount: Prisma.Decimal;
-            createdById: string | null;
-            type: import(".prisma/client").$Enums.InvoiceType;
-            status: import(".prisma/client").$Enums.InvoiceStatus;
-            dueDate: Date;
-            paymentState: import(".prisma/client").$Enums.PaymentState;
             salesOrderId: string | null;
             purchaseOrderId: string | null;
             journalEntryId: string | null;
+            createdAt: Date;
+            updatedAt: Date;
+            createdById: string | null;
         })[];
         meta: {
             total: any;
@@ -130,20 +130,20 @@ export declare class InvoicesService {
     post(id: string, userId?: string): Promise<{
         number: string;
         id: string;
-        createdAt: Date;
-        updatedAt: Date;
+        type: import(".prisma/client").$Enums.InvoiceType;
         partnerId: string;
         date: Date;
+        dueDate: Date;
+        status: import(".prisma/client").$Enums.InvoiceStatus;
+        paymentState: import(".prisma/client").$Enums.PaymentState;
         totalAmount: Prisma.Decimal;
         taxAmount: Prisma.Decimal;
-        createdById: string | null;
-        type: import(".prisma/client").$Enums.InvoiceType;
-        status: import(".prisma/client").$Enums.InvoiceStatus;
-        dueDate: Date;
-        paymentState: import(".prisma/client").$Enums.PaymentState;
         salesOrderId: string | null;
         purchaseOrderId: string | null;
         journalEntryId: string | null;
+        createdAt: Date;
+        updatedAt: Date;
+        createdById: string | null;
     }>;
     registerPayment(id: string, data: {
         journalId: string;
