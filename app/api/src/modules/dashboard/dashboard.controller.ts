@@ -18,8 +18,8 @@ export class DashboardController {
    * @returns Object containing balance, income, expense, savings, and savingsRate
    */
   @Get("metrics")
-  async getMetrics() {
-    return this.dashboardService.getMetrics();
+  async getMetrics(@Request() req: any) {
+    return this.dashboardService.getMetrics(req?.user?.userId || req?.user?.id);
   }
 
   /**
@@ -27,8 +27,8 @@ export class DashboardController {
    * @returns Array of monthly income/expense data for visualization
    */
   @Get("money-flow")
-  async getMoneyFlow() {
-    return this.dashboardService.getMoneyFlow();
+  async getMoneyFlow(@Request() req: any) {
+    return this.dashboardService.getMoneyFlow(req?.user?.userId || req?.user?.id);
   }
 
   /**
@@ -36,8 +36,8 @@ export class DashboardController {
    * @returns Array of recent invoices with partner details
    */
   @Get("recent-transactions")
-  async getRecentTransactions() {
-    return this.dashboardService.getRecentTransactions();
+  async getRecentTransactions(@Request() req: any) {
+    return this.dashboardService.getRecentTransactions(req?.user?.userId || req?.user?.id);
   }
 
   /**

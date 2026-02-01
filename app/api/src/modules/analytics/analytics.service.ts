@@ -9,12 +9,24 @@ import { BudgetStatus, BudgetType } from "@prisma/client";
 
 @Injectable()
 export class AnalyticsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
+
+  /**
+   * Gets the organization ID for the user (for multi-tenant data isolation).
+   */
+  private async getOrganizationId(userId: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+
+    return user?.organizationId || null;
+  }
 
   /**
    * Get aggregate KPIs across all analytic accounts
    */
-  async getSummary(filters: AnalyticsFiltersDto) {
+  async getSummary(filters: AnalyticsFiltersDto, userId?: string) {
     const { startDate, endDate, analyticAccountId, budgetType } = filters;
 
     // Build budget filter
@@ -23,6 +35,19 @@ export class AnalyticsService {
       startDate: { lte: new Date(endDate) },
       endDate: { gte: new Date(startDate) },
     };
+
+    // Add organization-based filtering
+    if (userId) {
+      const organizationId = await this.getOrganizationId(userId);
+      if (organizationId) {
+        budgetWhere.OR = [
+          { createdBy: organizationId },
+          { creator: { organizationId: organizationId } },
+        ];
+      } else {
+        budgetWhere.createdBy = userId;
+      }
+    }
 
     if (analyticAccountId) {
       budgetWhere.analyticAccountId = analyticAccountId;
@@ -69,7 +94,7 @@ export class AnalyticsService {
   /**
    * Get performance data by analytic account
    */
-  async getByAnalytic(filters: AnalyticsFiltersDto) {
+  async getByAnalytic(filters: AnalyticsFiltersDto, userId?: string) {
     const { startDate, endDate, analyticAccountId, budgetType, status } =
       filters;
 
@@ -79,6 +104,19 @@ export class AnalyticsService {
       startDate: { lte: new Date(endDate) },
       endDate: { gte: new Date(startDate) },
     };
+
+    // Add organization-based filtering
+    if (userId) {
+      const organizationId = await this.getOrganizationId(userId);
+      if (organizationId) {
+        budgetWhere.OR = [
+          { createdBy: organizationId },
+          { creator: { organizationId: organizationId } },
+        ];
+      } else {
+        budgetWhere.createdBy = userId;
+      }
+    }
 
     if (analyticAccountId) {
       budgetWhere.analyticAccountId = analyticAccountId;
@@ -152,20 +190,35 @@ export class AnalyticsService {
   /**
    * Get drill-down transaction details for specific analytic account
    */
-  async getDrilldown(analyticId: string, filters: AnalyticsFiltersDto) {
+  async getDrilldown(analyticId: string, filters: AnalyticsFiltersDto, userId?: string) {
     const { startDate, endDate } = filters;
+
+    const invoiceWhere: any = {
+      status: "POSTED",
+      date: {
+        gte: new Date(startDate),
+        lte: new Date(endDate),
+      },
+    };
+
+    // Add organization-based filtering
+    if (userId) {
+      const organizationId = await this.getOrganizationId(userId);
+      if (organizationId) {
+        invoiceWhere.OR = [
+          { createdById: organizationId },
+          { creator: { organizationId: organizationId } },
+        ];
+      } else {
+        invoiceWhere.createdById = userId;
+      }
+    }
 
     // Fetch posted invoice lines for this analytic account
     const invoiceLines = await this.prisma.invoiceLine.findMany({
       where: {
         analyticAccountId: analyticId,
-        invoice: {
-          status: "POSTED",
-          date: {
-            gte: new Date(startDate),
-            lte: new Date(endDate),
-          },
-        },
+        invoice: invoiceWhere,
       },
       include: {
         invoice: {

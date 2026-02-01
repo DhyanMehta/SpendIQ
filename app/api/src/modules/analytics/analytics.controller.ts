@@ -1,4 +1,4 @@
-import { Controller, Get, Query, Param, UseGuards } from "@nestjs/common";
+import { Controller, Get, Query, Param, UseGuards, Request } from "@nestjs/common";
 import { AnalyticsService } from "./analytics.service";
 import { AnalyticsFiltersDto } from "./dto/analytics-filters.dto";
 import { JwtAuthGuard } from "../../common/auth/jwt-auth.guard";
@@ -10,23 +10,24 @@ import { Role } from "@prisma/client";
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles(Role.ADMIN) // Admin-only access
 export class AnalyticsController {
-  constructor(private readonly analyticsService: AnalyticsService) {}
+  constructor(private readonly analyticsService: AnalyticsService) { }
 
   @Get("summary")
-  getSummary(@Query() filters: AnalyticsFiltersDto) {
-    return this.analyticsService.getSummary(filters);
+  getSummary(@Query() filters: AnalyticsFiltersDto, @Request() req: any) {
+    return this.analyticsService.getSummary(filters, req?.user?.userId || req?.user?.id);
   }
 
   @Get("by-analytic")
-  getByAnalytic(@Query() filters: AnalyticsFiltersDto) {
-    return this.analyticsService.getByAnalytic(filters);
+  getByAnalytic(@Query() filters: AnalyticsFiltersDto, @Request() req: any) {
+    return this.analyticsService.getByAnalytic(filters, req?.user?.userId || req?.user?.id);
   }
 
   @Get(":analyticId/drilldown")
   getDrilldown(
     @Param("analyticId") analyticId: string,
     @Query() filters: AnalyticsFiltersDto,
+    @Request() req: any,
   ) {
-    return this.analyticsService.getDrilldown(analyticId, filters);
+    return this.analyticsService.getDrilldown(analyticId, filters, req?.user?.userId || req?.user?.id);
   }
 }

@@ -13,6 +13,18 @@ export class AnalyticalAccountService {
   constructor(private prisma: PrismaService) { }
 
   /**
+   * Gets the organization ID for the user (for multi-tenant data isolation).
+   */
+  private async getOrganizationId(userId: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+
+    return user?.organizationId || null;
+  }
+
+  /**
    * List all analytical accounts (exclude archived by default)
    */
   async findAll(includeArchived = false, userId?: string) {
@@ -22,9 +34,17 @@ export class AnalyticalAccountService {
       where.status = { not: AnalyticStatus.ARCHIVED };
     }
 
-    // Filter by admin who created the data
+    // Filter by organization for data isolation
     if (userId) {
-      where.createdById = userId;
+      const organizationId = await this.getOrganizationId(userId);
+      if (organizationId) {
+        where.OR = [
+          { createdById: organizationId },
+          { creator: { organizationId: organizationId } },
+        ];
+      } else {
+        where.createdById = userId;
+      }
     }
 
     return this.prisma.analyticalAccount.findMany({
@@ -47,9 +67,24 @@ export class AnalyticalAccountService {
   /**
    * Get single analytical account by ID
    */
-  async findOne(id: string) {
-    const account = await this.prisma.analyticalAccount.findUnique({
-      where: { id },
+  async findOne(id: string, userId?: string) {
+    const where: any = { id };
+
+    // Add organization filtering if userId provided
+    if (userId) {
+      const organizationId = await this.getOrganizationId(userId);
+      if (organizationId) {
+        where.OR = [
+          { createdById: organizationId },
+          { creator: { organizationId: organizationId } },
+        ];
+      } else {
+        where.createdById = userId;
+      }
+    }
+
+    const account = await this.prisma.analyticalAccount.findFirst({
+      where,
       include: {
         parent: true,
         children: true,

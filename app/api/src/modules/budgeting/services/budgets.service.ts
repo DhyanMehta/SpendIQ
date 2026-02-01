@@ -304,4 +304,30 @@ export class BudgetsService {
         : `Budget exceeded: Only ₹${remaining.toFixed(2)} available, requested ₹${amount.toFixed(2)}`,
     };
   }
+
+  /**
+   * Archive a budget
+   *
+   * Changes budget status to ARCHIVED.
+   * Archived budgets are hidden from active views but remain in the database.
+   *
+   * @param id - Budget ID to archive
+   * @returns Updated budget with ARCHIVED status
+   */
+  async archive(id: string) {
+    return this.prisma.budget.update({
+      where: { id },
+      data: { status: BudgetStatus.ARCHIVED },
+      include: {
+        analyticAccount: true,
+        creator: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+    });
+  }
 }

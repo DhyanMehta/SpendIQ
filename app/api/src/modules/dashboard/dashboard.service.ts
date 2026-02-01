@@ -10,7 +10,19 @@ import { InvoiceType, InvoiceStatus } from "@prisma/client";
  */
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(private readonly prisma: PrismaService) { }
+
+  /**
+   * Gets the organization ID for the user (for multi-tenant data isolation).
+   */
+  private async getOrganizationId(userId: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+
+    return user?.organizationId || null;
+  }
 
   /**
    * Calculate main dashboard KPI metrics
@@ -23,13 +35,28 @@ export class DashboardService {
    *
    * @returns Object with balance, income, expense, savings, and savingsRate
    */
-  async getMetrics() {
+  async getMetrics(userId?: string) {
+    // Build organization-based filter
+    const organizationFilter: any = {};
+    if (userId) {
+      const organizationId = await this.getOrganizationId(userId);
+      if (organizationId) {
+        organizationFilter.OR = [
+          { createdById: organizationId },
+          { creator: { organizationId: organizationId } },
+        ];
+      } else {
+        organizationFilter.createdById = userId;
+      }
+    }
+
     // 1. Calculate Income (Sales) - Include both DRAFT and POSTED invoices
     const incomeAgg = await this.prisma.invoice.aggregate({
       _sum: { totalAmount: true },
       where: {
         type: InvoiceType.OUT_INVOICE,
         status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] },
+        ...organizationFilter,
       },
     });
     const income = Number(incomeAgg._sum.totalAmount || 0);
@@ -40,6 +67,7 @@ export class DashboardService {
       where: {
         type: InvoiceType.IN_INVOICE,
         status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] },
+        ...organizationFilter,
       },
     });
     const expense = Number(expenseAgg._sum.totalAmount || 0);
@@ -68,10 +96,27 @@ export class DashboardService {
    *
    * @returns Array of objects with { name: monthName, income: number, expense: number }
    */
-  async getMoneyFlow() {
+  async getMoneyFlow(userId?: string) {
+    // Build organization-based filter
+    const organizationFilter: any = {
+      status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] },
+    };
+
+    if (userId) {
+      const organizationId = await this.getOrganizationId(userId);
+      if (organizationId) {
+        organizationFilter.OR = [
+          { createdById: organizationId },
+          { creator: { organizationId: organizationId } },
+        ];
+      } else {
+        organizationFilter.createdById = userId;
+      }
+    }
+
     // Get all DRAFT and POSTED invoices (exclude CANCELLED)
     const allInvoices = await this.prisma.invoice.findMany({
-      where: { status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] } },
+      where: organizationFilter,
       select: { date: true, type: true, totalAmount: true },
     });
 
@@ -122,11 +167,26 @@ export class DashboardService {
    *
    * @returns Array of Invoice objects with partner relation
    */
-  async getRecentTransactions() {
+  async getRecentTransactions(userId?: string) {
+    // Build organization-based filter
+    const organizationFilter: any = {
+      status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] },
+    };
+
+    if (userId) {
+      const organizationId = await this.getOrganizationId(userId);
+      if (organizationId) {
+        organizationFilter.OR = [
+          { createdById: organizationId },
+          { creator: { organizationId: organizationId } },
+        ];
+      } else {
+        organizationFilter.createdById = userId;
+      }
+    }
+
     return this.prisma.invoice.findMany({
-      where: {
-        status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] },
-      },
+      where: organizationFilter,
       take: 5,
       orderBy: { date: "desc" },
       include: { partner: true },
@@ -143,9 +203,22 @@ export class DashboardService {
    * @returns Array of objects with { name, value, color } for chart rendering
    */
   async getBudgetUtilization(userId: string) {
-    // Get budgets created by this user
+    // Build organization-based filter
+    const organizationFilter: any = {};
+
+    const organizationId = await this.getOrganizationId(userId);
+    if (organizationId) {
+      organizationFilter.OR = [
+        { createdBy: organizationId },
+        { creator: { organizationId: organizationId } },
+      ];
+    } else {
+      organizationFilter.createdBy = userId;
+    }
+
+    // Get budgets created by this user or organization
     const budgets = await this.prisma.budget.findMany({
-      where: { createdBy: userId },
+      where: organizationFilter,
       take: 5,
       orderBy: { createdAt: "desc" },
     });

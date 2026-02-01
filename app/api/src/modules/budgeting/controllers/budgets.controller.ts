@@ -33,7 +33,7 @@ import { CurrentUser } from "../../../common/decorators/current-user.decorator";
 @Controller("budgets")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class BudgetsController {
-  constructor(private readonly budgetsService: BudgetsService) {}
+  constructor(private readonly budgetsService: BudgetsService) { }
 
   /**
    * Create a new budget
@@ -113,5 +113,16 @@ export class BudgetsController {
   @Get(":id")
   findOne(@Param("id") id: string) {
     return this.budgetsService.findOne(id);
+  }
+
+  /**
+   * Archive a budget (changes status to ARCHIVED)
+   * @param id - Budget ID to archive
+   * @returns Updated budget with ARCHIVED status
+   */
+  @Patch(":id/archive")
+  @Roles(Role.ADMIN)
+  archive(@Param("id") id: string) {
+    return this.budgetsService.archive(id);
   }
 }
