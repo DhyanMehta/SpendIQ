@@ -176,10 +176,17 @@ function UsersAccessTab({ isAdmin }: { isAdmin: boolean }) {
       },
       {
         id: "2",
-        name: "Portal User",
+        name: "Vendor User",
+        email: "contact@vendor.com",
+        loginId: "vendor001",
+        role: "VENDOR",
+      },
+      {
+        id: "3",
+        name: "Customer User",
         email: "contact@customer.com",
-        loginId: "portal001",
-        role: "PORTAL_USER",
+        loginId: "customer001",
+        role: "CUSTOMER",
       },
     ]);
   }, []);

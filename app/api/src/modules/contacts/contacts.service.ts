@@ -16,7 +16,7 @@ export class ContactsService {
   constructor(
     private prisma: PrismaService,
     private mailService: MailService,
-  ) {}
+  ) { }
 
   async create(createContactDto: CreateContactDto, userId?: string) {
     // Check for existing email
@@ -47,14 +47,15 @@ export class ContactsService {
       // Hash password
       const hashedPassword = await bcrypt.hash(createContactDto.password, 10);
 
-      // Create user with PORTAL_USER role
+      // Create user with role based on contact type (VENDOR or CUSTOMER)
+      const userRole = createContactDto.type === "VENDOR" ? "VENDOR" : "CUSTOMER";
       portalUser = await this.prisma.user.create({
         data: {
           loginId: createContactDto.loginId,
           email: createContactDto.email,
           password: hashedPassword,
           name: createContactDto.name,
-          role: "PORTAL_USER",
+          role: userRole,
         },
       });
     }
@@ -75,6 +76,7 @@ export class ContactsService {
           : createContactDto.isPortalUser || false,
         imageUrl: createContactDto.imageUrl,
         portalUserId: portalUser?.id,
+        createdById: userId,
         tags: {
           create: tagConnections,
         },
@@ -132,6 +134,7 @@ export class ContactsService {
       where.status = Status.ACTIVE;
     }
 
+    // Filter by admin who created the data
     if (userId) {
       where.createdById = userId;
     }
@@ -251,13 +254,15 @@ export class ContactsService {
     const randomPassword = Math.random().toString(36).slice(-8);
     const loginId = `portal_${contact.email.split("@")[0]}_${Math.random().toString(36).slice(-4)}`;
 
+    // Assign role based on contact type (VENDOR or CUSTOMER)
+    const userRole = contact.type === "VENDOR" ? "VENDOR" : "CUSTOMER";
     const portalUser = await this.prisma.user.create({
       data: {
         loginId,
         email: contact.email,
         password: randomPassword, // Should be hashed in production
         name: contact.name,
-        role: "PORTAL_USER",
+        role: userRole,
       },
     });
 

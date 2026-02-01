@@ -88,6 +88,7 @@ export class PaymentsService {
     startDate?: string;
     endDate?: string;
     status?: string;
+    userId?: string;
   }) {
     const page = params.page || 1;
     const limit = params.limit || 10;
@@ -96,6 +97,11 @@ export class PaymentsService {
     const where: any = {
       type: 'OUTBOUND', // Vendor payments are outbound
     };
+
+    // Filter by admin who created the data
+    if (params.userId) {
+      where.createdById = params.userId;
+    }
 
     // Search by payment reference or vendor name
     if (params.search) {
@@ -262,7 +268,7 @@ export class PaymentsService {
    * @throws {BadRequestException} If vendor not found, not VENDOR type,
    *         allocations don't match payment amount, or allocation exceeds outstanding
    */
-  async create(dto: CreatePaymentDto) {
+  async create(dto: CreatePaymentDto, userId?: string) {
     // Validate vendor
     const vendor = await this.prisma.contact.findUnique({
       where: { id: dto.vendorId },
@@ -350,6 +356,7 @@ export class PaymentsService {
         method: dto.paymentMethod,
         type: 'OUTBOUND',
         status: 'DRAFT',
+        createdById: userId,
       },
       include: {
         partner: true,

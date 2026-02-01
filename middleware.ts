@@ -8,6 +8,13 @@ export function middleware(request: NextRequest) {
   const accessToken = request.cookies.get("accessToken")?.value;
   const userRole = request.cookies.get("userRole")?.value;
 
+  // Allow login page access regardless of auth state
+  // This lets users re-login with different credentials (e.g., admin switching to portal user)
+  // The login page will clear old auth state before submitting
+  if (pathname === "/login") {
+    return NextResponse.next();
+  }
+
   // If accessing a dashboard or portal route without a token, redirect to login
   if (
     (pathname.startsWith("/dashboard") || pathname.startsWith("/portal")) &&
@@ -20,22 +27,20 @@ export function middleware(request: NextRequest) {
 
   // Role-based route protection
   if (accessToken && userRole) {
-    // Portal routes: only PORTAL_USER can access
-    if (pathname.startsWith("/portal") && userRole !== "PORTAL_USER") {
+    // Portal routes: only VENDOR and CUSTOMER can access
+    if (pathname.startsWith("/portal") && userRole !== "VENDOR" && userRole !== "CUSTOMER") {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
 
-    // Dashboard routes: only ADMIN can access (PORTAL_USER cannot)
-    if (pathname.startsWith("/dashboard") && userRole === "PORTAL_USER") {
+    // Dashboard routes: only ADMIN can access (VENDOR and CUSTOMER cannot)
+    if (pathname.startsWith("/dashboard") && (userRole === "VENDOR" || userRole === "CUSTOMER")) {
       return NextResponse.redirect(new URL("/portal", request.url));
     }
   }
 
-  // If accessing login/register with a token, redirect based on role
-  // Note: We allow access to /login so users can re-login with different credentials
-  // The login page will clear old auth state before submitting
+  // If accessing register with a token, redirect based on role
   if (pathname === "/register" && accessToken) {
-    if (userRole === "PORTAL_USER") {
+    if (userRole === "VENDOR" || userRole === "CUSTOMER") {
       return NextResponse.redirect(new URL("/portal", request.url));
     }
     return NextResponse.redirect(new URL("/dashboard", request.url));

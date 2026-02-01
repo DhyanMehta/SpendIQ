@@ -657,7 +657,7 @@ export class MailService {
                   <p>You have been granted access to the SpendIQ ${portalType} Portal. You can now log in to view your account information, ${contactType === "CUSTOMER" ? "orders, invoices" : "purchase orders, bills"}, and more.</p>
                   
                   <div class="credentials">
-                    <p><strong>🔗 Portal URL:</strong> <a href="http://localhost:3000/portal">http://localhost:3000/portal</a></p>
+                    <p><strong>🔗 Login URL:</strong> <a href="http://localhost:3000/login">http://localhost:3000/login</a></p>
                     <p><strong>👤 Login ID:</strong> <code>${loginId}</code></p>
                     <p><strong>📧 Email:</strong> <code>${email}</code></p>
                     <p><strong>🔑 Password:</strong> <code>${password}</code></p>
@@ -668,7 +668,7 @@ export class MailService {
                   </div>
                   
                   <center>
-                    <a href="http://localhost:3000/portal" class="button">Access Portal</a>
+                    <a href="http://localhost:3000/login" class="button">Login to Portal</a>
                   </center>
                   
                   <p style="margin-top: 30px;">If you have any questions or need assistance, please contact our support team.</p>

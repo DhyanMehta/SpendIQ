@@ -73,7 +73,6 @@ export default function SalesOrderForm({ id }: SalesOrderFormProps) {
       setLines([
         {
           productId: "",
-          description: "",
           quantity: 1,
           unitPrice: 0,
           analyticalAccountId: "",
@@ -100,9 +99,6 @@ export default function SalesOrderForm({ id }: SalesOrderFormProps) {
         if (!line.productId) {
           newErrors[`line_${index}_product`] = "Product is required";
         }
-        if (!line.description) {
-          newErrors[`line_${index}_description`] = "Description is required";
-        }
         if (line.quantity <= 0) {
           newErrors[`line_${index}_quantity`] =
             "Quantity must be greater than 0";
@@ -128,7 +124,6 @@ export default function SalesOrderForm({ id }: SalesOrderFormProps) {
       date: new Date(orderDate),
       lines: lines.map((line) => ({
         productId: line.productId,
-        description: line.description,
         quantity: parseFloat(line.quantity),
         unitPrice: parseFloat(line.unitPrice),
         analyticalAccountId: line.analyticalAccountId || undefined,

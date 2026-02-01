@@ -30,6 +30,7 @@ import {
   KeyRound,
   ChevronDown,
   Loader2,
+  Building2,
 } from "lucide-react";
 import { apiRequest } from "@/lib/api";
 
@@ -107,9 +108,14 @@ export default function PortalLayout({
     <div className="min-h-screen bg-muted/20">
       {/* Portal Header */}
       <header className="bg-background border-b h-16 flex items-center justify-between px-6 lg:px-20">
-        <div className="font-bold text-lg">
-          SpendIQ{" "}
-          <span className="text-muted-foreground font-normal">Portal</span>
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 bg-primary rounded-full flex items-center justify-center text-primary-foreground">
+            <Building2 className="h-5 w-5" />
+          </div>
+          <div className="font-bold text-lg">
+            SpendIQ{" "}
+            <span className="text-muted-foreground font-normal">Portal</span>
+          </div>
         </div>
         <nav className="flex items-center gap-6">
           {navItems.map((item) => (

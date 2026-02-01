@@ -31,7 +31,8 @@ export function RoleSelect({ field }: RoleSelectProps) {
         </FormControl>
         <SelectContent>
           <SelectItem value={Role.ADMIN}>Admin</SelectItem>
-          <SelectItem value={Role.PORTAL_USER}>Portal User</SelectItem>
+          <SelectItem value={Role.VENDOR}>Vendor</SelectItem>
+          <SelectItem value={Role.CUSTOMER}>Customer</SelectItem>
         </SelectContent>
       </Select>
       <FormMessage />

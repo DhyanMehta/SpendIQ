@@ -74,7 +74,7 @@ export default function LoginPage() {
         }
 
         // Redirect based on role
-        if (data.user?.role === "PORTAL_USER") {
+        if (data.user?.role === "VENDOR" || data.user?.role === "CUSTOMER") {
           router.push("/portal");
         } else {
           router.push("/dashboard");

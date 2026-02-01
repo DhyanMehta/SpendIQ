@@ -56,7 +56,6 @@ export function SalesLineItems({
       ...lines,
       {
         productId: "",
-        description: "",
         quantity: 1,
         unitPrice: 0,
         analyticalAccountId: "",
@@ -77,11 +76,10 @@ export function SalesLineItems({
     const newLines = [...lines];
     newLines[index] = { ...newLines[index], [field]: value };
 
-    // Auto-fill description when product changes
+    // Auto-fill price when product changes
     if (field === "productId" && products) {
       const product = products.find((p: any) => p.id === value);
       if (product) {
-        newLines[index].description = product.name;
         // Use salesPrice for Sales Orders
         newLines[index].unitPrice = product.salesPrice || 0;
 
@@ -113,8 +111,7 @@ export function SalesLineItems({
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead className="w-[200px]">Product</TableHead>
-                <TableHead className="w-[250px]">Description</TableHead>
+                <TableHead className="w-[250px]">Product</TableHead>
                 <TableHead className="w-[120px]">Quantity</TableHead>
                 <TableHead className="w-[120px]">Unit Price</TableHead>
                 <TableHead className="w-[120px]">Subtotal</TableHead>
@@ -157,20 +154,6 @@ export function SalesLineItems({
                           ))}
                         </SelectContent>
                       </Select>
-                    </TableCell>
-                    <TableCell>
-                      <Input
-                        value={line.description}
-                        onChange={(e) =>
-                          handleLineChange(index, "description", e.target.value)
-                        }
-                        disabled={isReadOnly}
-                        className={
-                          errors[`line_${index}_description`]
-                            ? "border-red-500"
-                            : ""
-                        }
-                      />
                     </TableCell>
                     <TableCell>
                       <Input

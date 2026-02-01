@@ -11,7 +11,7 @@ import { Status } from "@prisma/client";
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   async create(createProductDto: CreateProductDto, userId?: string) {
     // Handle category (create if name provided, use ID otherwise)
@@ -58,6 +58,7 @@ export class ProductsService {
       where.name = { contains: query.search, mode: "insensitive" };
     }
 
+    // Filter by admin who created the data
     if (userId) {
       where.createdById = userId;
     }

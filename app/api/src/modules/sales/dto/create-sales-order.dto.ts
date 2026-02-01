@@ -13,9 +13,6 @@ class SalesOrderLineDto {
   @IsString()
   productId: string;
 
-  @IsString()
-  description: string;
-
   @IsNumber()
   quantity: number;
 

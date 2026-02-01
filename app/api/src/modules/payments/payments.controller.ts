@@ -13,14 +13,16 @@ import { PaymentsService } from './payments.service';
 import { CreatePaymentDto } from './dto/create-payment.dto';
 import { UpdatePaymentDto } from './dto/update-payment.dto';
 import { JwtAuthGuard } from '../../common/auth/jwt-auth.guard';
+import { CurrentUser } from '../../common/decorators/current-user.decorator';
 
 @Controller('payments')
 @UseGuards(JwtAuthGuard)
 export class PaymentsController {
-  constructor(private readonly paymentsService: PaymentsService) {}
+  constructor(private readonly paymentsService: PaymentsService) { }
 
   @Get()
   findAll(
+    @CurrentUser() user: { id: string },
     @Query('page') page?: string,
     @Query('limit') limit?: string,
     @Query('search') search?: string,
@@ -37,6 +39,7 @@ export class PaymentsController {
       startDate,
       endDate,
       status,
+      userId: user.id,
     });
   }
 
@@ -51,8 +54,8 @@ export class PaymentsController {
   }
 
   @Post()
-  create(@Body() createPaymentDto: CreatePaymentDto) {
-    return this.paymentsService.create(createPaymentDto);
+  create(@Body() createPaymentDto: CreatePaymentDto, @CurrentUser() user: { id: string }) {
+    return this.paymentsService.create(createPaymentDto, user.id);
   }
 
   @Patch(':id')

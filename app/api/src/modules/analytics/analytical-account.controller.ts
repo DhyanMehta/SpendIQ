@@ -23,11 +23,11 @@ import { Role } from "@prisma/client";
 export class AnalyticalAccountController {
   constructor(
     private readonly analyticalAccountService: AnalyticalAccountService,
-  ) {}
+  ) { }
 
   @Get()
-  findAll(@Query("includeArchived") includeArchived?: string) {
-    return this.analyticalAccountService.findAll(includeArchived === "true");
+  findAll(@Query("includeArchived") includeArchived?: string, @Request() req?: any) {
+    return this.analyticalAccountService.findAll(includeArchived === "true", req?.user?.userId || req?.user?.id);
   }
 
   @Get(":id")

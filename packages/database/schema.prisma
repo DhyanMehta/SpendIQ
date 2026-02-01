@@ -17,32 +17,31 @@ model User {
   email     String   @unique
   password  String
   name      String?
-  role      Role     @default(PORTAL_USER)
+  role      Role     @default(CUSTOMER)
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  sessions       Session[]
-  auditLogs      AuditLog[]
+  sessions  Session[]
+  auditLogs AuditLog[]
 
   // Created entities
-  createdBudgets        Budget[]        @relation("BudgetCreator")
-  createdContacts       Contact[]       @relation("ContactCreator")
-  createdProducts       Product[]       @relation("ProductCreator")
-  createdPurchaseOrders PurchaseOrder[] @relation("POCreator")
-  createdSalesOrders    SalesOrder[]    @relation("SOCreator")
-  createdInvoices       Invoice[]       @relation("InvoiceCreator")
-  createdPayments       Payment[]       @relation("PaymentCreator")
-  createdJournalEntries JournalEntry[]  @relation("JournalEntryCreator")
-  createdAnalyticalAccounts AnalyticalAccount[] @relation("AnalyticalAccountCreator")
+  createdBudgets             Budget[]             @relation("BudgetCreator")
+  createdContacts            Contact[]            @relation("ContactCreator")
+  createdProducts            Product[]            @relation("ProductCreator")
+  createdPurchaseOrders      PurchaseOrder[]      @relation("POCreator")
+  createdSalesOrders         SalesOrder[]         @relation("SOCreator")
+  createdInvoices            Invoice[]            @relation("InvoiceCreator")
+  createdPayments            Payment[]            @relation("PaymentCreator")
+  createdJournalEntries      JournalEntry[]       @relation("JournalEntryCreator")
+  createdAnalyticalAccounts  AnalyticalAccount[]  @relation("AnalyticalAccountCreator")
   createdAutoAnalyticalRules AutoAnalyticalRule[] @relation("AutoAnalyticalRuleCreator")
 
-  contact        Contact?   @relation("PortalUser")
-  
+  contact Contact? @relation("PortalUser")
+
   @@map("users")
 }
 
 // Role enum moved to bottom or redefined
-
 
 model Session {
   id        String   @id @default(uuid())
@@ -50,8 +49,8 @@ model Session {
   token     String   @unique
   expiresAt DateTime
   createdAt DateTime @default(now())
-  
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("sessions")
 }
@@ -61,40 +60,40 @@ model Session {
 // ============================================================================
 
 model Contact {
-  id        String      @id @default(uuid())
-  name      String
-  email     String      @unique
-  phone     String?
-  
+  id    String  @id @default(uuid())
+  name  String
+  email String  @unique
+  phone String?
+
   // Address fields
-  street    String?
-  city      String?
-  state     String?
-  country   String?
-  pincode   String?
-  
-  type      ContactType
-  status    Status      @default(ACTIVE)
-  imageUrl  String?
-  
-  portalUserId String?    @unique
-  portalUser   User?      @relation("PortalUser", fields: [portalUserId], references: [id])
-  isPortalUser Boolean    @default(false)
-  
-  tags      ContactTag[]
-  
-  salesOrders     SalesOrder[]
-  purchaseOrders  PurchaseOrder[]
-  invoices        Invoice[]
-  payments        Payment[]
-  journalEntries  JournalEntryLine[]
-  autoRules       AutoAnalyticalRule[]
-  
-  createdAt DateTime    @default(now())
-  updatedAt DateTime    @updatedAt
+  street  String?
+  city    String?
+  state   String?
+  country String?
+  pincode String?
+
+  type     ContactType
+  status   Status      @default(ACTIVE)
+  imageUrl String?
+
+  portalUserId String? @unique
+  portalUser   User?   @relation("PortalUser", fields: [portalUserId], references: [id])
+  isPortalUser Boolean @default(false)
+
+  tags ContactTag[]
+
+  salesOrders    SalesOrder[]
+  purchaseOrders PurchaseOrder[]
+  invoices       Invoice[]
+  payments       Payment[]
+  journalEntries JournalEntryLine[]
+  autoRules      AutoAnalyticalRule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   createdById String?
-  creator     User?     @relation("ContactCreator", fields: [createdById], references: [id])
+  creator     User?   @relation("ContactCreator", fields: [createdById], references: [id])
 
   @@map("contacts")
 }
@@ -111,7 +110,8 @@ enum Status {
 
 enum Role {
   ADMIN
-  PORTAL_USER
+  VENDOR
+  CUSTOMER
 }
 
 enum AnalyticStatus {
@@ -120,20 +120,19 @@ enum AnalyticStatus {
   ARCHIVED
 }
 
-
 model Product {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   name        String
   description String?
-  
-  salesPrice    Decimal  @default(0.00) @db.Decimal(10, 2)
-  purchasePrice Decimal  @default(0.00) @db.Decimal(10, 2)
-  
-  status      Status   @default(ACTIVE)
-  
-  categoryId  String?
-  category    ProductCategory? @relation(fields: [categoryId], references: [id])
-  
+
+  salesPrice    Decimal @default(0.00) @db.Decimal(10, 2)
+  purchasePrice Decimal @default(0.00) @db.Decimal(10, 2)
+
+  status Status @default(ACTIVE)
+
+  categoryId String?
+  category   ProductCategory? @relation(fields: [categoryId], references: [id])
+
   defaultAnalyticAccountId String?
   defaultAnalyticAccount   AnalyticalAccount? @relation("DefaultAnalytic", fields: [defaultAnalyticAccountId], references: [id])
 
@@ -141,27 +140,26 @@ model Product {
   poLines      PurchaseOrderLine[]
   soLines      SalesOrderLine[]
   autoRules    AutoAnalyticalRule[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   createdById String?
-  creator     User?    @relation("ProductCreator", fields: [createdById], references: [id])
+  creator     User?   @relation("ProductCreator", fields: [createdById], references: [id])
 
   @@map("products")
 }
 
-
 // Tag system for contacts
 model Tag {
-  id        String       @id @default(uuid())
-  name      String       @unique
+  id        String               @id @default(uuid())
+  name      String               @unique
   color     String?
   contacts  ContactTag[]
   autoRules AutoAnalyticalRule[]
-  createdAt DateTime     @default(now())
-  updatedAt DateTime     @updatedAt
-  
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @updatedAt
+
   @@map("tags")
 }
 
@@ -170,44 +168,44 @@ model ContactTag {
   tagId     String
   contact   Contact @relation(fields: [contactId], references: [id], onDelete: Cascade)
   tag       Tag     @relation(fields: [tagId], references: [id], onDelete: Cascade)
-  
+
   @@id([contactId, tagId])
   @@map("contact_tags")
 }
 
 model ProductCategory {
-  id          String   @id @default(uuid())
-  name        String
-  parentId    String?
-  parent      ProductCategory?  @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children    ProductCategory[] @relation("CategoryHierarchy")
-  products    Product[]
-  autoRules   AutoAnalyticalRule[]
+  id        String               @id @default(uuid())
+  name      String
+  parentId  String?
+  parent    ProductCategory?     @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  ProductCategory[]    @relation("CategoryHierarchy")
+  products  Product[]
+  autoRules AutoAnalyticalRule[]
 
   @@map("product_categories")
 }
 
 model AnalyticalAccount {
-  id          String   @id @default(uuid())
-  code        String   @unique
-  name        String
-  status      AnalyticStatus @default(DRAFT)
-  parentId    String?
-  parent      AnalyticalAccount?  @relation("AnalyticHierarchy", fields: [parentId], references: [id])
-  children    AnalyticalAccount[] @relation("AnalyticHierarchy")
-  
-  entries     JournalEntryLine[]
-  invoiceLines InvoiceLine[]
-  budgets     Budget[]
-  defaultForProducts Product[] @relation("DefaultAnalytic")
-  poLines     PurchaseOrderLine[] @relation("POLineAnalytic")
-  autoRules   AutoAnalyticalRule[] @relation("RuleAnalytic")
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  id       String              @id @default(uuid())
+  code     String              @unique
+  name     String
+  status   AnalyticStatus      @default(DRAFT)
+  parentId String?
+  parent   AnalyticalAccount?  @relation("AnalyticHierarchy", fields: [parentId], references: [id])
+  children AnalyticalAccount[] @relation("AnalyticHierarchy")
+
+  entries            JournalEntryLine[]
+  invoiceLines       InvoiceLine[]
+  budgets            Budget[]
+  defaultForProducts Product[]            @relation("DefaultAnalytic")
+  poLines            PurchaseOrderLine[]  @relation("POLineAnalytic")
+  autoRules          AutoAnalyticalRule[] @relation("RuleAnalytic")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   createdById String?
-  creator     User?    @relation("AnalyticalAccountCreator", fields: [createdById], references: [id])
+  creator     User?   @relation("AnalyticalAccountCreator", fields: [createdById], references: [id])
 
   @@index([code])
   @@index([status])
@@ -216,16 +214,16 @@ model AnalyticalAccount {
 
 // General Ledger Account (Required for Double Entry)
 model Account {
-  id          String   @id @default(uuid())
-  code        String   @unique
-  name        String
-  type        AccountType
-  reconcilable Boolean    @default(false)
-  
-  entries     JournalEntryLine[]
+  id           String      @id @default(uuid())
+  code         String      @unique
+  name         String
+  type         AccountType
+  reconcilable Boolean     @default(false)
 
-  createdAt   DateTime    @default(now())
-  updatedAt   DateTime    @updatedAt
+  entries JournalEntryLine[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   @@map("accounts")
 }
@@ -243,38 +241,38 @@ enum AccountType {
 // ============================================================================
 
 model Budget {
-  id                    String              @id @default(uuid())
-  name                  String
-  
+  id   String @id @default(uuid())
+  name String
+
   // Period-based instead of fiscal year
-  startDate             DateTime
-  endDate               DateTime
-  
+  startDate DateTime
+  endDate   DateTime
+
   // Required link to analytic account (cost center)
-  analyticAccountId     String
-  analyticAccount       AnalyticalAccount   @relation(fields: [analyticAccountId], references: [id])
-  
+  analyticAccountId String
+  analyticAccount   AnalyticalAccount @relation(fields: [analyticAccountId], references: [id])
+
   // Budget type for categorization
-  budgetType            BudgetType
-  
+  budgetType BudgetType
+
   // Single budgeted amount (no budget lines)
-  budgetedAmount        Decimal             @db.Decimal(15, 2)
-  
+  budgetedAmount Decimal @db.Decimal(15, 2)
+
   // Status workflow
-  status                BudgetStatus        @default(DRAFT)
-  
+  status BudgetStatus @default(DRAFT)
+
   // Revision chain (simplified)
-  revisionOfId          String?             @unique
-  revisionOf            Budget?             @relation("BudgetRevision", fields: [revisionOfId], references: [id])
-  revisedBy             Budget?             @relation("BudgetRevision")
-  
+  revisionOfId String? @unique
+  revisionOf   Budget? @relation("BudgetRevision", fields: [revisionOfId], references: [id])
+  revisedBy    Budget? @relation("BudgetRevision")
+
   // Audit fields
-  createdBy             String
-  creator               User                @relation("BudgetCreator", fields: [createdBy], references: [id])
-  
-  createdAt             DateTime            @default(now())
-  updatedAt             DateTime            @updatedAt
-  
+  createdBy String
+  creator   User   @relation("BudgetCreator", fields: [createdBy], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
   @@index([analyticAccountId])
   @@index([startDate, endDate])
   @@index([status])
@@ -287,10 +285,10 @@ enum BudgetType {
 }
 
 enum BudgetStatus {
-  DRAFT      // Editable, no actuals
-  CONFIRMED  // Locked, actuals computing
-  REVISED    // Old version, read-only
-  ARCHIVED   // Hidden from default list
+  DRAFT // Editable, no actuals
+  CONFIRMED // Locked, actuals computing
+  REVISED // Old version, read-only
+  ARCHIVED // Hidden from default list
 }
 
 // ============================================================================
@@ -298,43 +296,43 @@ enum BudgetStatus {
 // ============================================================================
 
 model PurchaseOrder {
-  id          String   @id @default(uuid())
-  poNumber    String   @unique // PO-000001
-  vendorId    String
-  vendor      Contact  @relation(fields: [vendorId], references: [id])
-  
-  orderDate   DateTime
-  status      PurchOrderStatus @default(DRAFT)
-  
-  subtotal    Decimal  @db.Decimal(15, 2)
-  taxAmount   Decimal  @default(0) @db.Decimal(15, 2)
-  totalAmount Decimal  @db.Decimal(15, 2)
-  
-  lines       PurchaseOrderLine[]
-  invoices    Invoice[] // Linked bills
+  id       String  @id @default(uuid())
+  poNumber String  @unique // PO-000001
+  vendorId String
+  vendor   Contact @relation(fields: [vendorId], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  orderDate DateTime
+  status    PurchOrderStatus @default(DRAFT)
+
+  subtotal    Decimal @db.Decimal(15, 2)
+  taxAmount   Decimal @default(0) @db.Decimal(15, 2)
+  totalAmount Decimal @db.Decimal(15, 2)
+
+  lines    PurchaseOrderLine[]
+  invoices Invoice[] // Linked bills
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   createdById String?
-  creator     User?    @relation("POCreator", fields: [createdById], references: [id])
+  creator     User?   @relation("POCreator", fields: [createdById], references: [id])
 
   @@map("purchase_orders")
 }
 
 model PurchaseOrderLine {
-  id          String   @id @default(uuid())
+  id              String        @id @default(uuid())
   purchaseOrderId String
   purchaseOrder   PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
-  
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
-  
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
   description String
-  quantity    Decimal  @db.Decimal(10, 2)
-  unitPrice   Decimal  @db.Decimal(10, 2)
-  subtotal    Decimal  @db.Decimal(15, 2)
-  
+  quantity    Decimal @db.Decimal(10, 2)
+  unitPrice   Decimal @db.Decimal(10, 2)
+  subtotal    Decimal @db.Decimal(15, 2)
+
   analyticalAccountId String?
   analyticalAccount   AnalyticalAccount? @relation("POLineAnalytic", fields: [analyticalAccountId], references: [id])
 
@@ -348,39 +346,39 @@ enum PurchOrderStatus {
 }
 
 model SalesOrder {
-  id          String   @id @default(uuid())
-  reference   String   @unique // SO-2023-001
-  customerId  String
-  customer    Contact  @relation(fields: [customerId], references: [id])
-  
-  date        DateTime
-  status      SalesOrderStatus @default(DRAFT)
-  
-  totalAmount Decimal  @db.Decimal(15, 2)
-  
-  lines       SalesOrderLine[]
-  invoices    Invoice[]
+  id         String  @id @default(uuid())
+  reference  String  @unique // SO-2023-001
+  customerId String
+  customer   Contact @relation(fields: [customerId], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  date   DateTime
+  status SalesOrderStatus @default(DRAFT)
+
+  totalAmount Decimal @db.Decimal(15, 2)
+
+  lines    SalesOrderLine[]
+  invoices Invoice[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   createdById String?
-  creator     User?    @relation("SOCreator", fields: [createdById], references: [id])
+  creator     User?   @relation("SOCreator", fields: [createdById], references: [id])
 
   @@map("sales_orders")
 }
 
 model SalesOrderLine {
-  id          String   @id @default(uuid())
-  orderId     String
-  order       SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
-  
-  productId   String
-  product     Product  @relation(fields: [productId], references: [id])
-  
-  quantity    Decimal  @db.Decimal(10, 2)
-  unitPrice   Decimal  @db.Decimal(10, 2)
-  subtotal    Decimal  @db.Decimal(15, 2)
+  id      String     @id @default(uuid())
+  orderId String
+  order   SalesOrder @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  productId String
+  product   Product @relation(fields: [productId], references: [id])
+
+  quantity  Decimal @db.Decimal(10, 2)
+  unitPrice Decimal @db.Decimal(10, 2)
+  subtotal  Decimal @db.Decimal(15, 2)
 
   @@map("sales_order_lines")
 }
@@ -395,40 +393,40 @@ enum SalesOrderStatus {
 }
 
 model Invoice {
-  id          String   @id @default(uuid())
-  number      String   @unique // INV-2023-001
-  type        InvoiceType // IN_INVOICE (Vendor Bill), OUT_INVOICE (Customer Invoice)
-  
-  partnerId   String
-  partner     Contact  @relation(fields: [partnerId], references: [id])
-  
-  date        DateTime
-  dueDate     DateTime
-  
-  status      InvoiceStatus @default(DRAFT)
-  paymentState PaymentState @default(NOT_PAID)
-  
-  totalAmount Decimal  @db.Decimal(15, 2)
-  taxAmount   Decimal  @default(0) @db.Decimal(15, 2)
-  
-  lines       InvoiceLine[]
-  payments    PaymentAllocation[]
-  
+  id     String      @id @default(uuid())
+  number String      @unique // INV-2023-001
+  type   InvoiceType // IN_INVOICE (Vendor Bill), OUT_INVOICE (Customer Invoice)
+
+  partnerId String
+  partner   Contact @relation(fields: [partnerId], references: [id])
+
+  date    DateTime
+  dueDate DateTime
+
+  status       InvoiceStatus @default(DRAFT)
+  paymentState PaymentState  @default(NOT_PAID)
+
+  totalAmount Decimal @db.Decimal(15, 2)
+  taxAmount   Decimal @default(0) @db.Decimal(15, 2)
+
+  lines    InvoiceLine[]
+  payments PaymentAllocation[]
+
   // Links
   salesOrderId    String?
-  salesOrder      SalesOrder? @relation(fields: [salesOrderId], references: [id])
+  salesOrder      SalesOrder?    @relation(fields: [salesOrderId], references: [id])
   purchaseOrderId String?
   purchaseOrder   PurchaseOrder? @relation(fields: [purchaseOrderId], references: [id])
-  
-  // Accounting Link
-  journalEntryId  String? @unique
-  journalEntry    JournalEntry? @relation(fields: [journalEntryId], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  // Accounting Link
+  journalEntryId String?       @unique
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   createdById String?
-  creator     User?    @relation("InvoiceCreator", fields: [createdById], references: [id])
+  creator     User?   @relation("InvoiceCreator", fields: [createdById], references: [id])
 
   @@index([date])
   @@index([partnerId])
@@ -437,9 +435,9 @@ model Invoice {
 
 enum InvoiceType {
   OUT_INVOICE // Customer Invoice
-  OUT_REFUND  // Customer Credit Note
-  IN_INVOICE  // Vendor Bill
-  IN_REFUND   // Vendor Credit Note
+  OUT_REFUND // Customer Credit Note
+  IN_INVOICE // Vendor Bill
+  IN_REFUND // Vendor Credit Note
 }
 
 enum InvoiceStatus {
@@ -455,19 +453,19 @@ enum PaymentState {
 }
 
 model InvoiceLine {
-  id            String   @id @default(uuid())
-  invoiceId     String
-  invoice       Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
-  
-  productId     String?
-  product       Product? @relation(fields: [productId], references: [id])
-  label         String
-  
-  quantity      Decimal  @default(1) @db.Decimal(10, 2)
-  priceUnit     Decimal  @db.Decimal(10, 2)
-  taxRate       Decimal  @default(0) @db.Decimal(5, 2)
-  subtotal      Decimal  @db.Decimal(15, 2)
-  
+  id        String  @id @default(uuid())
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+  label     String
+
+  quantity  Decimal @default(1) @db.Decimal(10, 2)
+  priceUnit Decimal @db.Decimal(10, 2)
+  taxRate   Decimal @default(0) @db.Decimal(5, 2)
+  subtotal  Decimal @db.Decimal(15, 2)
+
   // This line links to an Analytic Account for budget tracking
   analyticAccountId String?
   analyticAccount   AnalyticalAccount? @relation(fields: [analyticAccountId], references: [id])
@@ -480,35 +478,35 @@ model InvoiceLine {
 // ============================================================================
 
 model Payment {
-  id          String   @id @default(uuid())
-  reference   String   @unique
-  partnerId   String
-  partner     Contact  @relation(fields: [partnerId], references: [id])
-  
-  date        DateTime
-  amount      Decimal  @db.Decimal(15, 2)
-  type        PaymentType
-  
-  method      String   // BANK, CASH
-  status      PaymentStatus @default(DRAFT)
-  
-  allocations PaymentAllocation[]
-  
-  // Accounting Link
-  journalEntryId  String? @unique
-  journalEntry    JournalEntry? @relation(fields: [journalEntryId], references: [id])
+  id        String  @id @default(uuid())
+  reference String  @unique
+  partnerId String
+  partner   Contact @relation(fields: [partnerId], references: [id])
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  date   DateTime
+  amount Decimal     @db.Decimal(15, 2)
+  type   PaymentType
+
+  method String // BANK, CASH
+  status PaymentStatus @default(DRAFT)
+
+  allocations PaymentAllocation[]
+
+  // Accounting Link
+  journalEntryId String?       @unique
+  journalEntry   JournalEntry? @relation(fields: [journalEntryId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   createdById String?
-  creator     User?    @relation("PaymentCreator", fields: [createdById], references: [id])
+  creator     User?   @relation("PaymentCreator", fields: [createdById], references: [id])
 
   @@map("payments")
 }
 
 enum PaymentType {
-  INBOUND  // Customer paying us
+  INBOUND // Customer paying us
   OUTBOUND // Us paying vendor
 }
 
@@ -519,16 +517,16 @@ enum PaymentStatus {
 }
 
 model PaymentAllocation {
-  id          String   @id @default(uuid())
-  paymentId   String
-  payment     Payment  @relation(fields: [paymentId], references: [id])
-  
-  invoiceId   String
-  invoice     Invoice  @relation(fields: [invoiceId], references: [id])
-  
-  amount      Decimal  @db.Decimal(15, 2)
-  
-  createdAt   DateTime @default(now())
+  id        String  @id @default(uuid())
+  paymentId String
+  payment   Payment @relation(fields: [paymentId], references: [id])
+
+  invoiceId String
+  invoice   Invoice @relation(fields: [invoiceId], references: [id])
+
+  amount Decimal @db.Decimal(15, 2)
+
+  createdAt DateTime @default(now())
 
   @@map("payment_allocations")
 }
@@ -538,25 +536,25 @@ model PaymentAllocation {
 // ============================================================================
 
 model JournalEntry {
-  id          String   @id @default(uuid())
-  number      String?  @unique
-  date        DateTime
-  reference   String?
-  journalId   String?  // Could be 'Sales', 'Purchase', 'Bank'
-  
-  state       EntryState @default(DRAFT)
-  
-  lines       JournalEntryLine[]
-  
-  // Reverse relations are handled in Invoice/Payment models
-  invoice     Invoice?
-  payment     Payment?
+  id        String   @id @default(uuid())
+  number    String?  @unique
+  date      DateTime
+  reference String?
+  journalId String? // Could be 'Sales', 'Purchase', 'Bank'
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  state EntryState @default(DRAFT)
+
+  lines JournalEntryLine[]
+
+  // Reverse relations are handled in Invoice/Payment models
+  invoice Invoice?
+  payment Payment?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   createdById String?
-  creator     User?    @relation("JournalEntryCreator", fields: [createdById], references: [id])
+  creator     User?   @relation("JournalEntryCreator", fields: [createdById], references: [id])
 
   @@index([date])
   @@map("journal_entries")
@@ -569,28 +567,28 @@ enum EntryState {
 }
 
 model JournalEntryLine {
-  id             String   @id @default(uuid())
-  entryId        String
-  entry          JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
-  
-  accountId      String
-  account        Account      @relation(fields: [accountId], references: [id])
-  
-  partnerId      String?
-  partner        Contact?     @relation(fields: [partnerId], references: [id])
-  
-  label          String?
-  
-  debit          Decimal  @default(0) @db.Decimal(15, 2)
-  credit         Decimal  @default(0) @db.Decimal(15, 2)
-  
+  id      String       @id @default(uuid())
+  entryId String
+  entry   JournalEntry @relation(fields: [entryId], references: [id], onDelete: Cascade)
+
+  accountId String
+  account   Account @relation(fields: [accountId], references: [id])
+
+  partnerId String?
+  partner   Contact? @relation(fields: [partnerId], references: [id])
+
+  label String?
+
+  debit  Decimal @default(0) @db.Decimal(15, 2)
+  credit Decimal @default(0) @db.Decimal(15, 2)
+
   // Analytic distribution
   analyticAccountId String?
   analyticAccount   AnalyticalAccount? @relation(fields: [analyticAccountId], references: [id])
-  
-  reconciled     Boolean  @default(false)
 
-  createdAt      DateTime @default(now())
+  reconciled Boolean @default(false)
+
+  createdAt DateTime @default(now())
 
   @@index([accountId])
   @@index([analyticAccountId])
@@ -601,44 +599,36 @@ model JournalEntryLine {
 // AUTOMATION & AUDIT
 // ============================================================================
 
-
-
-
-
-
-
-
-
 model AutoAnalyticalRule {
-  id          String   @id @default(uuid())
-  name        String
-  status      AnalyticStatus @default(DRAFT)
-  
+  id     String         @id @default(uuid())
+  name   String
+  status AnalyticStatus @default(DRAFT)
+
   // Optional match conditions (ANY field can match)
-  partnerTagId      String?
-  partnerTag        Tag?     @relation(fields: [partnerTagId], references: [id])
-  
-  partnerId         String?
-  partner           Contact? @relation(fields: [partnerId], references: [id])
-  
+  partnerTagId String?
+  partnerTag   Tag?    @relation(fields: [partnerTagId], references: [id])
+
+  partnerId String?
+  partner   Contact? @relation(fields: [partnerId], references: [id])
+
   productCategoryId String?
   productCategory   ProductCategory? @relation(fields: [productCategoryId], references: [id])
-  
-  productId         String?
-  product           Product? @relation(fields: [productId], references: [id])
-  
+
+  productId String?
+  product   Product? @relation(fields: [productId], references: [id])
+
   // Required output
   analyticalAccountId String
   analyticalAccount   AnalyticalAccount @relation("RuleAnalytic", fields: [analyticalAccountId], references: [id])
-  
+
   // Auto-calculated priority (number of fields matched)
-  priority    Int      @default(0)
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  priority Int @default(0)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   createdById String?
-  creator     User?    @relation("AutoAnalyticalRuleCreator", fields: [createdById], references: [id])
+  creator     User?   @relation("AutoAnalyticalRuleCreator", fields: [createdById], references: [id])
 
   @@index([status])
   @@index([priority])
@@ -646,17 +636,17 @@ model AutoAnalyticalRule {
 }
 
 model AuditLog {
-  id          String   @id @default(uuid())
-  action      String   // CREATE, UPDATE, DELETE
-  entity      String   // Budget, Payment...
-  entityId    String
-  
-  userId      String?
-  user        User?    @relation(fields: [userId], references: [id])
-  
-  details     Json?    // Before/After state
-  
-  createdAt   DateTime @default(now())
+  id       String @id @default(uuid())
+  action   String // CREATE, UPDATE, DELETE
+  entity   String // Budget, Payment...
+  entityId String
+
+  userId String?
+  user   User?   @relation(fields: [userId], references: [id])
+
+  details Json? // Before/After state
+
+  createdAt DateTime @default(now())
 
   @@index([entityId])
   @@map("audit_logs")

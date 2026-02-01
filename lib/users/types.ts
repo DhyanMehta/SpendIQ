@@ -1,6 +1,7 @@
 export enum Role {
   ADMIN = "ADMIN",
-  PORTAL_USER = "PORTAL_USER",
+  VENDOR = "VENDOR",
+  CUSTOMER = "CUSTOMER",
 }
 
 export interface CreateUserRequest {

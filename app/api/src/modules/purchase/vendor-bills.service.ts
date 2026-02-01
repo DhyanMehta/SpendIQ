@@ -70,6 +70,7 @@ export class VendorBillsService {
     return this.prisma.invoice.findMany({
       where: {
         type: InvoiceType.IN_INVOICE,
+        // Filter by admin who created the data
         createdById: userId,
       },
       include: {
@@ -84,6 +85,7 @@ export class VendorBillsService {
     const bill = await this.prisma.invoice.findFirst({
       where: {
         id,
+        type: InvoiceType.IN_INVOICE,
         createdById: userId,
       },
       include: {

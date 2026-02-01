@@ -10,16 +10,21 @@ import { AnalyticStatus } from "@prisma/client";
 
 @Injectable()
 export class AnalyticalAccountService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * List all analytical accounts (exclude archived by default)
    */
-  async findAll(includeArchived = false) {
+  async findAll(includeArchived = false, userId?: string) {
     const where: any = {};
 
     if (!includeArchived) {
       where.status = { not: AnalyticStatus.ARCHIVED };
+    }
+
+    // Filter by admin who created the data
+    if (userId) {
+      where.createdById = userId;
     }
 
     return this.prisma.analyticalAccount.findMany({
