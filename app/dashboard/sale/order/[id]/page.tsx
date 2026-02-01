@@ -19,7 +19,9 @@ import {
   FileText,
   CheckCircle,
   AlertTriangle,
+  Download,
 } from "lucide-react";
+import { generatePDF, prepareSalesOrderData } from "@/lib/pdf-generator";
 import {
   Table,
   TableBody,
@@ -84,6 +86,12 @@ export default function SalesOrderDetailPage() {
     }
   };
 
+  const handleDownloadPDF = () => {
+    const pdfData = prepareSalesOrderData(order);
+    generatePDF(pdfData);
+    toast.success("PDF downloaded successfully");
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -101,6 +109,10 @@ export default function SalesOrderDetailPage() {
           <StatusBadge status={order.status} />
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleDownloadPDF}>
+            <Download className="mr-2 h-4 w-4" />
+            Download PDF
+          </Button>
           {order.status === "DRAFT" && (
             <>
               <Button

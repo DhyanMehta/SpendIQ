@@ -30,6 +30,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
+import { generatePDF, prepareInvoiceData } from "@/lib/pdf-generator";
 
 export default function InvoiceDetailPage() {
   const router = useRouter();
@@ -84,6 +85,12 @@ export default function InvoiceDetailPage() {
     setIsRegisteringPayment(true);
   };
 
+  const handleDownloadPDF = () => {
+    const pdfData = prepareInvoiceData(invoice);
+    generatePDF(pdfData);
+    toast.success("PDF downloaded successfully");
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -102,6 +109,10 @@ export default function InvoiceDetailPage() {
           <StatusBadge status={invoice.paymentState} />
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleDownloadPDF}>
+            <Download className="mr-2 h-4 w-4" />
+            Download PDF
+          </Button>
           {invoice.state === "DRAFT" && (
             <Button onClick={handlePost}>
               <CheckCircle className="mr-2 h-4 w-4" />

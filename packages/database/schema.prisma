@@ -25,11 +25,11 @@ model User {
   // Self-registered admins have organizationId = their own id
   // Users created by admins inherit their creator's organizationId
   organizationId String?
-  organization   User?    @relation("OrganizationMembers", fields: [organizationId], references: [id])
-  orgMembers     User[]   @relation("OrganizationMembers")
+  organization   User?   @relation("OrganizationMembers", fields: [organizationId], references: [id])
+  orgMembers     User[]  @relation("OrganizationMembers")
 
-  sessions       Session[]
-  auditLogs      AuditLog[]
+  sessions  Session[]
+  auditLogs AuditLog[]
 
   // Created entities
   createdBudgets             Budget[]             @relation("BudgetCreator")
@@ -182,21 +182,21 @@ model ContactTag {
 }
 
 model ProductCategory {
-  id          String               @id @default(uuid())
-  name        String
-  parentId    String?
-  parent      ProductCategory?     @relation("CategoryHierarchy", fields: [parentId], references: [id])
-  children    ProductCategory[]    @relation("CategoryHierarchy")
-  products    Product[]
-  autoRules   AutoAnalyticalRule[]
-  
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @default(now()) @updatedAt
-  
+  id        String               @id @default(uuid())
+  name      String
+  parentId  String?
+  parent    ProductCategory?     @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  children  ProductCategory[]    @relation("CategoryHierarchy")
+  products  Product[]
+  autoRules AutoAnalyticalRule[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @default(now()) @updatedAt
+
   // Organization-level data isolation
   organizationId String?
-  createdById String?
-  creator     User?    @relation("CategoryCreator", fields: [createdById], references: [id])
+  createdById    String?
+  creator        User?   @relation("CategoryCreator", fields: [createdById], references: [id])
 
   @@map("product_categories")
 }
@@ -312,21 +312,21 @@ enum BudgetStatus {
 // ============================================================================
 
 model PurchaseOrder {
-  id          String   @id @default(uuid())
-  poNumber    String   @unique // PO-000001
-  reference   String?  // User reference like REQ-25-0001
-  vendorId    String
-  vendor      Contact  @relation(fields: [vendorId], references: [id])
-  
-  orderDate   DateTime
-  status      PurchOrderStatus @default(DRAFT)
-  
-  subtotal    Decimal  @db.Decimal(15, 2)
-  taxAmount   Decimal  @default(0) @db.Decimal(15, 2)
-  totalAmount Decimal  @db.Decimal(15, 2)
-  
-  lines       PurchaseOrderLine[]
-  invoices    Invoice[] // Linked bills
+  id        String  @id @default(uuid())
+  poNumber  String  @unique // PO-000001
+  reference String? // User reference like REQ-25-0001
+  vendorId  String
+  vendor    Contact @relation(fields: [vendorId], references: [id])
+
+  orderDate DateTime
+  status    PurchOrderStatus @default(DRAFT)
+
+  subtotal    Decimal @db.Decimal(15, 2)
+  taxAmount   Decimal @default(0) @db.Decimal(15, 2)
+  totalAmount Decimal @db.Decimal(15, 2)
+
+  lines    PurchaseOrderLine[]
+  invoices Invoice[] // Linked bills
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
