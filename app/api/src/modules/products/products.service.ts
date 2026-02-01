@@ -11,7 +11,7 @@ import { Status } from "@prisma/client";
 
 @Injectable()
 export class ProductsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Gets the organization ID for the user (for multi-tenant data isolation).
@@ -84,8 +84,12 @@ export class ProductsService {
       where.name = { contains: query.search, mode: "insensitive" };
     }
 
+    // Filter by organization for data isolation
     if (organizationId) {
       where.createdById = organizationId;
+    } else if (userId) {
+      // Fallback to user-based filtering if no organization
+      where.createdById = userId;
     }
 
     if (query.categoryId) {

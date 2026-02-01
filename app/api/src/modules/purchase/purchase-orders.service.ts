@@ -56,8 +56,11 @@ export class PurchaseOrdersService {
     });
   }
 
-  async findAll() {
+  async findAll(userId: string) {
     return this.prisma.purchaseOrder.findMany({
+      where: {
+        createdById: userId,
+      },
       include: {
         vendor: { select: { name: true } },
         _count: { select: { lines: true } },

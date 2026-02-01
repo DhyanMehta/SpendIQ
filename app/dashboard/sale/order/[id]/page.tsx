@@ -19,7 +19,9 @@ import {
   FileText,
   CheckCircle,
   AlertTriangle,
+  Download,
 } from "lucide-react";
+import { generatePDF, prepareSalesOrderData } from "@/lib/pdf-generator";
 import {
   Table,
   TableBody,
@@ -84,6 +86,12 @@ export default function SalesOrderDetailPage() {
     }
   };
 
+  const handleDownloadPDF = () => {
+    const pdfData = prepareSalesOrderData(order);
+    generatePDF(pdfData);
+    toast.success("PDF downloaded successfully");
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -101,6 +109,10 @@ export default function SalesOrderDetailPage() {
           <StatusBadge status={order.status} />
         </div>
         <div className="flex gap-2">
+          <Button variant="outline" onClick={handleDownloadPDF}>
+            <Download className="mr-2 h-4 w-4" />
+            Download PDF
+          </Button>
           {order.status === "DRAFT" && (
             <>
               <Button
@@ -137,7 +149,6 @@ export default function SalesOrderDetailPage() {
             <TableHeader>
               <TableRow>
                 <TableHead>Product</TableHead>
-                <TableHead>Description</TableHead>
                 <TableHead className="text-right">Quantity</TableHead>
                 <TableHead className="text-right">Unit Price</TableHead>
                 <TableHead className="text-right">Subtotal</TableHead>
@@ -147,7 +158,6 @@ export default function SalesOrderDetailPage() {
               {order.lines?.map((line: any) => (
                 <TableRow key={line.id}>
                   <TableCell>{line.product?.name}</TableCell>
-                  <TableCell>{line.description}</TableCell>
                   <TableCell className="text-right">{line.quantity}</TableCell>
                   <TableCell className="text-right">
                     ₹{Number(line.unitPrice).toLocaleString("en-IN")}
@@ -158,7 +168,7 @@ export default function SalesOrderDetailPage() {
                 </TableRow>
               ))}
               <TableRow>
-                <TableCell colSpan={4} className="text-right font-bold">
+                <TableCell colSpan={3} className="text-right font-bold">
                   Total
                 </TableCell>
                 <TableCell className="text-right font-bold">

@@ -5,8 +5,9 @@ import { useForm, useFieldArray } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { useQuery } from "@tanstack/react-query";
-import { Plus, Trash2, Save, CheckCircle, FileText } from "lucide-react";
+import { Plus, Trash2, Save, CheckCircle, FileText, Download } from "lucide-react";
 import { format } from "date-fns";
+import { toast } from "sonner";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -48,6 +49,7 @@ import {
   PurchaseOrder,
   PurchOrderStatus,
 } from "@/lib/purchase/types";
+import { generatePDF, preparePurchaseOrderData } from "@/lib/pdf-generator";
 
 interface PurchaseOrderFormProps {
   initialData?: PurchaseOrder;
@@ -102,14 +104,14 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
         unitPrice: Number(l.unitPrice),
         analyticalAccountId: l.analyticalAccountId || "",
       })) || [
-        {
-          productId: "",
-          description: "",
-          quantity: 1,
-          unitPrice: 0,
-          analyticalAccountId: "", // Optional
-        },
-      ],
+          {
+            productId: "",
+            description: "",
+            quantity: 1,
+            unitPrice: 0,
+            analyticalAccountId: "", // Optional
+          },
+        ],
     },
     disabled: !isEditable,
   });
@@ -173,6 +175,13 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
     alert("Feature coming in next step: Create Bill from PO " + po?.poNumber);
   };
 
+  const handleDownloadPDF = () => {
+    if (!po) return;
+    const pdfData = preparePurchaseOrderData(po);
+    generatePDF(pdfData);
+    toast.success("PDF downloaded successfully");
+  };
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-center">
@@ -195,6 +204,15 @@ export function PurchaseOrderForm({ initialData }: PurchaseOrderFormProps) {
           </div>
         </div>
         <div className="space-x-2">
+          {po && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handleDownloadPDF}
+            >
+              <Download className="mr-2 h-4 w-4" /> Download PDF
+            </Button>
+          )}
           {!po && (
             <Button
               type="button"

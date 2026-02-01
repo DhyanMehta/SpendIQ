@@ -6,7 +6,7 @@ import { CurrentUser } from "../../common/decorators/current-user.decorator";
 // Assuming global auth or adding guards later as per `PurchaseOrdersController` pattern
 @Controller("purchase/bills")
 export class VendorBillsController {
-  constructor(private readonly vendorBillsService: VendorBillsService) {}
+  constructor(private readonly vendorBillsService: VendorBillsService) { }
 
   @Post()
   create(

@@ -30,7 +30,7 @@ export function CreateUserForm() {
       name: "",
       loginId: "",
       email: "",
-      role: Role.PORTAL_USER,
+      role: Role.CUSTOMER,
       password: "",
       confirmPassword: "",
     },

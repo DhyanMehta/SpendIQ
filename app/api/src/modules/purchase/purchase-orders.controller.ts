@@ -36,8 +36,8 @@ export class PurchaseOrdersController {
 
   @Get()
   @Roles(Role.ADMIN)
-  findAll() {
-    return this.purchaseOrdersService.findAll();
+  findAll(@Request() req) {
+    return this.purchaseOrdersService.findAll(req.user.id);
   }
 
   @Get(":id")

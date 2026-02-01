@@ -18,7 +18,7 @@ import { CurrentUser } from "../../common/decorators/current-user.decorator";
 @Controller("invoices")
 @UseGuards(JwtAuthGuard)
 export class InvoicesController {
-  constructor(private readonly invoicesService: InvoicesService) {}
+  constructor(private readonly invoicesService: InvoicesService) { }
 
   @Post()
   create(@Body() createInvoiceDto: CreateInvoiceDto, @CurrentUser() user: any) {

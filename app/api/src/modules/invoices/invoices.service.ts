@@ -22,7 +22,7 @@ export class InvoicesService {
     // private readonly budgetsService: BudgetsService,
     @Inject(forwardRef(() => SalesService))
     private readonly salesService: SalesService,
-  ) {}
+  ) { }
 
   async create(createDto: CreateInvoiceDto, userId?: string) {
     // Generate Invoice Number
@@ -87,6 +87,7 @@ export class InvoicesService {
     if (type) where.type = type as InvoiceType;
     if (state) where.status = state as InvoiceStatus;
     if (partnerId) where.partnerId = partnerId;
+    // Filter by admin who created the data
     if (userId) where.createdById = userId;
 
     const [invoices, total] = await Promise.all([

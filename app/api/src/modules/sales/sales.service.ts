@@ -46,7 +46,6 @@ export class SalesService {
         lines: {
           create: createDto.lines.map((line) => ({
             productId: line.productId,
-            description: line.description,
             quantity: line.quantity,
             unitPrice: line.unitPrice,
             subtotal: line.quantity * line.unitPrice,
@@ -94,6 +93,7 @@ export class SalesService {
       where.customerId = customerId;
     }
 
+    // Filter by admin who created the data
     if (userId) {
       where.createdById = userId;
     }
@@ -191,7 +191,6 @@ export class SalesService {
           lines: {
             create: updateDto.lines.map((line) => ({
               productId: line.productId,
-              description: line.description,
               quantity: line.quantity,
               unitPrice: line.unitPrice,
               subtotal: line.quantity * line.unitPrice,

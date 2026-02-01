@@ -53,7 +53,7 @@ export class AuthService {
     private prisma: PrismaService,
     private jwtService: JwtService,
     private mailService: MailService,
-  ) {}
+  ) { }
 
   /**
    * Sends a One-Time Password (OTP) to the specified email address
@@ -266,7 +266,7 @@ export class AuthService {
    * This method:
    * 1. Looks up user by loginId
    * 2. Validates password using bcrypt comparison
-   * 3. Verifies user has PORTAL_USER role
+   * 3. Verifies user has VENDOR or CUSTOMER role
    * 4. Fetches associated contact information
    * 5. Generates JWT with user id, email, role, and contactId in payload
    * 6. Returns access token, user info, and contact info
@@ -294,8 +294,8 @@ export class AuthService {
       throw invalidCredsError;
     }
 
-    // Verify user has PORTAL_USER role
-    if (user.role !== Role.PORTAL_USER) {
+    // Verify user has VENDOR or CUSTOMER role (portal users)
+    if (user.role !== Role.VENDOR && user.role !== Role.CUSTOMER) {
       throw new UnauthorizedException(
         "Access denied. This login is for portal users only.",
       );
@@ -355,7 +355,7 @@ export class AuthService {
    *   - loginId: Unique login identifier
    *   - email: Email address
    *   - name: Display name
-   *   - role: User role (ADMIN or PORTAL_USER)
+   *   - role: User role (ADMIN, VENDOR, or CUSTOMER)
    *   - createdAt: Account creation timestamp
    *   - updatedAt: Last update timestamp
    * @throws {UnauthorizedException} If user with given ID doesn't exist

@@ -16,52 +16,52 @@ import { Role } from "@prisma/client";
 @Controller("portal")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PortalController {
-  constructor(private readonly portalService: PortalService) {}
+  constructor(private readonly portalService: PortalService) { }
 
   @Get("dashboard")
-  @Roles(Role.PORTAL_USER, Role.ADMIN)
+  @Roles(Role.VENDOR, Role.CUSTOMER, Role.ADMIN)
   getDashboard(@Request() req) {
     return this.portalService.getDashboardData(req.user.id);
   }
 
   @Get("profile")
-  @Roles(Role.PORTAL_USER, Role.ADMIN)
+  @Roles(Role.VENDOR, Role.CUSTOMER, Role.ADMIN)
   getProfile(@Request() req) {
     return this.portalService.getProfile(req.user.id);
   }
 
   @Get("invoices")
-  @Roles(Role.PORTAL_USER, Role.ADMIN)
+  @Roles(Role.VENDOR, Role.CUSTOMER, Role.ADMIN)
   getMyInvoices(@Request() req) {
     return this.portalService.getMyInvoices(req.user.id);
   }
 
   @Get("purchase-orders")
-  @Roles(Role.PORTAL_USER, Role.ADMIN)
+  @Roles(Role.VENDOR, Role.CUSTOMER, Role.ADMIN)
   getMyPurchaseOrders(@Request() req) {
     return this.portalService.getMyPurchaseOrders(req.user.id);
   }
 
   @Get("sales-orders")
-  @Roles(Role.PORTAL_USER, Role.ADMIN)
+  @Roles(Role.VENDOR, Role.CUSTOMER, Role.ADMIN)
   getMySalesOrders(@Request() req) {
     return this.portalService.getMySalesOrders(req.user.id);
   }
 
   @Get("bills")
-  @Roles(Role.PORTAL_USER, Role.ADMIN)
+  @Roles(Role.VENDOR, Role.CUSTOMER, Role.ADMIN)
   getMyBills(@Request() req) {
     return this.portalService.getMyBills(req.user.id);
   }
 
   @Get("payments")
-  @Roles(Role.PORTAL_USER, Role.ADMIN)
+  @Roles(Role.VENDOR, Role.CUSTOMER, Role.ADMIN)
   getMyPayments(@Request() req) {
     return this.portalService.getMyPayments(req.user.id);
   }
 
   @Post("invoices/:id/pay")
-  @Roles(Role.PORTAL_USER)
+  @Roles(Role.VENDOR, Role.CUSTOMER)
   payInvoice(
     @Param("id") id: string,
     @Body() body: { amount?: number },
@@ -71,7 +71,7 @@ export class PortalController {
   }
 
   @Post("invoices/:id/verify-payment")
-  @Roles(Role.PORTAL_USER)
+  @Roles(Role.VENDOR, Role.CUSTOMER)
   verifyPayment(
     @Param("id") id: string,
     @Body()
