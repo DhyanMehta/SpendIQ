@@ -319,6 +319,65 @@ export const budgetsApi = {
   },
 };
 
+/**
+ * Profile API
+ * 
+ * Provides operations for user profile management.
+ * Includes fetching profile data, updating personal info, and changing password.
+ */
+export const profileApi = {
+  /**
+   * Fetch current user's profile
+   * @returns User profile with personal and business information
+   */
+  getProfile: async () => {
+    const res = await apiClient.get("/auth/profile");
+    return res.data;
+  },
+
+  /**
+   * Update user's personal information
+   * @param data - Personal info fields (name, phone, address)
+   * @returns Updated user profile
+   */
+  updatePersonalInfo: async (data: {
+    name?: string;
+    phone?: string;
+    address?: string;
+  }) => {
+    const res = await apiClient.patch("/auth/profile", data);
+    return res.data;
+  },
+
+  /**
+   * Change user's password
+   * @param data - Current and new password
+   * @returns Success response
+   */
+  changePassword: async (data: {
+    currentPassword: string;
+    newPassword: string;
+  }) => {
+    const res = await apiClient.post("/auth/change-password", data);
+    return res.data;
+  },
+
+  /**
+   * Update user preferences
+   * @param data - Theme and notification preferences
+   * @returns Updated preferences
+   */
+  updatePreferences: async (data: {
+    theme?: "light" | "dark" | "system";
+    language?: string;
+    notifications?: boolean;
+  }) => {
+    const res = await apiClient.patch("/auth/preferences", data);
+    return res.data;
+  },
+};
+
 // Export the configured client
 export const client = apiClient;
+export { apiClient };
 export default apiClient;

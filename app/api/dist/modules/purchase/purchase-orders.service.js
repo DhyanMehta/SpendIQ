@@ -126,13 +126,24 @@ let PurchaseOrdersService = class PurchaseOrdersService {
             budgetWarnings: warnings,
         };
     }
+    async cancel(id) {
+        const po = await this.findOne(id);
+        if (po.status === client_1.PurchOrderStatus.CANCELLED) {
+            throw new common_1.BadRequestException("PO is already cancelled");
+        }
+        return this.prisma.purchaseOrder.update({
+            where: { id },
+            data: { status: client_1.PurchOrderStatus.CANCELLED },
+        });
+    }
     async remove(id) {
         const po = await this.findOne(id);
-        if (po.status !== client_1.PurchOrderStatus.DRAFT &&
-            po.status !== client_1.PurchOrderStatus.CANCELLED) {
-            throw new common_1.BadRequestException("Cannot delete confirmed POs. Cancel them instead.");
+        if (po.status !== client_1.PurchOrderStatus.DRAFT) {
+            throw new common_1.BadRequestException("Only Draft POs can be deleted");
         }
-        return this.prisma.purchaseOrder.delete({ where: { id } });
+        return this.prisma.purchaseOrder.delete({
+            where: { id },
+        });
     }
 };
 exports.PurchaseOrdersService = PurchaseOrdersService;

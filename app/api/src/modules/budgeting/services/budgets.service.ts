@@ -30,7 +30,7 @@ enum BudgetStatus {
  */
 @Injectable()
 export class BudgetsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
   /**
    * Create a new budget
@@ -299,7 +299,7 @@ export class BudgetsService {
       available: remaining >= amount,
       remaining,
       budgetId: budget.id,
-      message: remaining >= amount 
+      message: remaining >= amount
         ? `Budget available: ₹${remaining.toFixed(2)} remaining`
         : `Budget exceeded: Only ₹${remaining.toFixed(2)} available, requested ₹${amount.toFixed(2)}`,
     };

@@ -46,7 +46,11 @@ export declare class PortalController {
         total: number;
         tax: number;
         status: import(".prisma/client").$Enums.InvoiceStatus;
-        paymentState: import(".prisma/client").$Enums.PaymentState;
+        paymentState: "NOT_PAID" | "PARTIAL" | "PAID";
+        paidViaCash: number;
+        paidViaBank: number;
+        totalPaid: number;
+        amountDue: number;
         salesOrderRef: string;
         lines: {
             id: string;
@@ -113,7 +117,9 @@ export declare class PortalController {
         status: import(".prisma/client").$Enums.PaymentStatus;
         type: import(".prisma/client").$Enums.PaymentType;
     }[]>;
-    payInvoice(id: string, req: any): Promise<{
+    payInvoice(id: string, body: {
+        amount?: number;
+    }, req: any): Promise<{
         success: boolean;
         message: string;
         orderId?: undefined;
@@ -121,6 +127,10 @@ export declare class PortalController {
         amountInPaise?: undefined;
         currency?: undefined;
         invoiceNumber?: undefined;
+        invoiceTotal?: undefined;
+        totalPaid?: undefined;
+        amountDue?: undefined;
+        isPartialPayment?: undefined;
         keyId?: undefined;
         prefill?: undefined;
     } | {
@@ -130,6 +140,10 @@ export declare class PortalController {
         amountInPaise: number;
         currency: string;
         invoiceNumber: string;
+        invoiceTotal: number;
+        totalPaid: number;
+        amountDue: number;
+        isPartialPayment: boolean;
         keyId: string;
         prefill: {
             name: string;
@@ -142,6 +156,7 @@ export declare class PortalController {
         razorpay_order_id: string;
         razorpay_payment_id: string;
         razorpay_signature: string;
+        amount: number;
     }, req: any): Promise<{
         success: boolean;
         message: string;
@@ -149,6 +164,10 @@ export declare class PortalController {
         paymentReference?: undefined;
         amountPaid?: undefined;
         invoiceNumber?: undefined;
+        invoiceTotal?: undefined;
+        totalPaid?: undefined;
+        amountDue?: undefined;
+        paymentState?: undefined;
     } | {
         success: boolean;
         message: string;
@@ -156,5 +175,9 @@ export declare class PortalController {
         paymentReference: string;
         amountPaid: number;
         invoiceNumber: string;
+        invoiceTotal: number;
+        totalPaid: number;
+        amountDue: number;
+        paymentState: "NOT_PAID" | "PARTIAL" | "PAID";
     }>;
 }

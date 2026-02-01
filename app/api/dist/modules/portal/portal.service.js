@@ -165,21 +165,49 @@ let PortalService = class PortalService {
                     },
                 },
                 salesOrder: true,
+                payments: {
+                    include: {
+                        payment: true,
+                    },
+                },
             },
             orderBy: { date: "desc" },
         });
         return invoices.map((inv) => {
             var _a;
-            return ({
+            const totalAmount = Number(inv.totalAmount);
+            const paidViaCash = inv.payments
+                .filter((pa) => pa.payment.method === "CASH" && pa.payment.status === "POSTED")
+                .reduce((sum, pa) => sum + Number(pa.amount), 0);
+            const paidViaBank = inv.payments
+                .filter((pa) => ["BANK_TRANSFER", "RAZORPAY"].includes(pa.payment.method) && pa.payment.status === "POSTED")
+                .reduce((sum, pa) => sum + Number(pa.amount), 0);
+            const totalPaid = paidViaCash + paidViaBank;
+            const amountDue = totalAmount - totalPaid;
+            let calculatedPaymentState;
+            if (amountDue <= 0) {
+                calculatedPaymentState = "PAID";
+            }
+            else if (amountDue < totalAmount) {
+                calculatedPaymentState = "PARTIAL";
+            }
+            else {
+                calculatedPaymentState = "NOT_PAID";
+            }
+            return {
                 id: inv.id,
                 number: inv.number,
                 type: inv.type,
                 date: inv.date,
                 dueDate: inv.dueDate,
-                total: Number(inv.totalAmount),
+                total: totalAmount,
                 tax: Number(inv.taxAmount),
                 status: inv.status,
-                paymentState: inv.paymentState,
+                paymentState: calculatedPaymentState,
+                paidViaCash,
+                paidViaBank,
+                totalPaid,
+                amountDue: Math.max(0, amountDue),
                 salesOrderRef: ((_a = inv.salesOrder) === null || _a === void 0 ? void 0 : _a.reference) || null,
                 lines: inv.lines.map((line) => {
                     var _a;
@@ -192,7 +220,7 @@ let PortalService = class PortalService {
                         amount: Number(line.subtotal),
                     });
                 }),
-            });
+            };
         });
     }
     async getMyPurchaseOrders(userId) {
@@ -324,7 +352,7 @@ let PortalService = class PortalService {
             type: payment.type,
         }));
     }
-    async payInvoice(invoiceId, userId) {
+    async payInvoice(invoiceId, userId, paymentAmount) {
         var _a, _b;
         const contactId = await this.getContactId(userId);
         if (!contactId) {
@@ -339,6 +367,13 @@ let PortalService = class PortalService {
                 id: invoiceId,
                 partnerId: contactId,
             },
+            include: {
+                payments: {
+                    include: {
+                        payment: true,
+                    },
+                },
+            },
         });
         if (!invoice) {
             return { success: false, message: "Invoice not found" };
@@ -346,7 +381,21 @@ let PortalService = class PortalService {
         if (invoice.paymentState === "PAID") {
             return { success: false, message: "Invoice is already paid" };
         }
-        const amount = Number(invoice.totalAmount);
+        const totalPaid = invoice.payments
+            .filter((pa) => pa.payment.status === "POSTED")
+            .reduce((sum, pa) => sum + Number(pa.amount), 0);
+        const totalAmount = Number(invoice.totalAmount);
+        const amountDue = totalAmount - totalPaid;
+        let amount = paymentAmount !== null && paymentAmount !== void 0 ? paymentAmount : amountDue;
+        if (amount <= 0) {
+            return { success: false, message: "Invalid payment amount" };
+        }
+        if (amount > amountDue) {
+            return {
+                success: false,
+                message: `Payment amount (${amount}) exceeds amount due (${amountDue})`
+            };
+        }
         if (!this.razorpay) {
             return {
                 success: false,
@@ -357,12 +406,14 @@ let PortalService = class PortalService {
             const order = await this.razorpay.orders.create({
                 amount: Math.round(amount * 100),
                 currency: "INR",
-                receipt: `inv_${invoice.number}`,
+                receipt: `inv_${invoice.number}_${Date.now()}`,
                 notes: {
                     invoiceId: invoice.id,
                     invoiceNumber: invoice.number,
                     userId: userId,
                     contactId: contactId,
+                    paymentAmount: amount.toString(),
+                    isPartialPayment: (amount < amountDue).toString(),
                 },
             });
             return {
@@ -372,6 +423,10 @@ let PortalService = class PortalService {
                 amountInPaise: Math.round(amount * 100),
                 currency: "INR",
                 invoiceNumber: invoice.number,
+                invoiceTotal: totalAmount,
+                totalPaid: totalPaid,
+                amountDue: amountDue,
+                isPartialPayment: amount < amountDue,
                 keyId: this.configService.get("RAZORPAY_KEY_ID"),
                 prefill: {
                     name: ((_a = user === null || user === void 0 ? void 0 : user.contact) === null || _a === void 0 ? void 0 : _a.name) || (user === null || user === void 0 ? void 0 : user.name) || "",
@@ -388,7 +443,7 @@ let PortalService = class PortalService {
             };
         }
     }
-    async verifyPayment(invoiceId, userId, razorpayOrderId, razorpayPaymentId, razorpaySignature) {
+    async verifyPayment(invoiceId, userId, razorpayOrderId, razorpayPaymentId, razorpaySignature, paymentAmount) {
         const contactId = await this.getContactId(userId);
         if (!contactId) {
             return { success: false, message: "No contact linked to user" };
@@ -397,6 +452,13 @@ let PortalService = class PortalService {
             where: {
                 id: invoiceId,
                 partnerId: contactId,
+            },
+            include: {
+                payments: {
+                    include: {
+                        payment: true,
+                    },
+                },
             },
         });
         if (!invoice) {
@@ -410,7 +472,7 @@ let PortalService = class PortalService {
         if (generatedSignature !== razorpaySignature) {
             return { success: false, message: "Payment verification failed" };
         }
-        const amount = Number(invoice.totalAmount);
+        const amount = paymentAmount;
         const paymentRef = `PAY-${Date.now()}-${Math.random().toString(36).substr(2, 9).toUpperCase()}`;
         const payment = await this.prisma.payment.create({
             data: {
@@ -430,17 +492,39 @@ let PortalService = class PortalService {
                 amount: amount,
             },
         });
+        const previousPaid = invoice.payments
+            .filter((pa) => pa.payment.status === "POSTED")
+            .reduce((sum, pa) => sum + Number(pa.amount), 0);
+        const totalPaidNow = previousPaid + amount;
+        const invoiceTotal = Number(invoice.totalAmount);
+        const amountDueNow = invoiceTotal - totalPaidNow;
+        let newPaymentState;
+        if (amountDueNow <= 0) {
+            newPaymentState = "PAID";
+        }
+        else if (amountDueNow < invoiceTotal) {
+            newPaymentState = "PARTIAL";
+        }
+        else {
+            newPaymentState = "NOT_PAID";
+        }
         await this.prisma.invoice.update({
             where: { id: invoiceId },
-            data: { paymentState: "PAID" },
+            data: { paymentState: newPaymentState },
         });
         return {
             success: true,
-            message: "Payment successful",
+            message: newPaymentState === "PAID"
+                ? "Payment successful - Invoice fully paid"
+                : "Payment successful - Partial payment recorded",
             paymentId: payment.id,
             paymentReference: paymentRef,
             amountPaid: amount,
             invoiceNumber: invoice.number,
+            invoiceTotal: invoiceTotal,
+            totalPaid: totalPaidNow,
+            amountDue: Math.max(0, amountDueNow),
+            paymentState: newPaymentState,
         };
     }
 };

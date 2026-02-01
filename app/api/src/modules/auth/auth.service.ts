@@ -169,6 +169,7 @@ export class AuthService {
 
     const hashedPassword = await bcrypt.hash(registerDto.password, 10);
 
+    // Create user first without organizationId
     const user = await this.prisma.user.create({
       data: {
         loginId: registerDto.loginId,
@@ -177,6 +178,13 @@ export class AuthService {
         name: registerDto.name,
         role: Role.ADMIN, // Defaulting to ADMIN for MVP functionality
       },
+    });
+
+    // Self-registered admins are root of their organization
+    // Set organizationId to their own id
+    await this.prisma.user.update({
+      where: { id: user.id },
+      data: { organizationId: user.id },
     });
 
     // Cleanup OTP

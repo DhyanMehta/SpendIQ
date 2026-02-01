@@ -1,5 +1,5 @@
-import PaymentForm from "@/components/purchase/payment/PaymentForm";
+import { BillPaymentForm } from "@/components/purchase/payment/BillPaymentForm";
 
 export default function CreatePaymentPage() {
-  return <PaymentForm id="create" />;
+  return <BillPaymentForm />;
 }

@@ -13,7 +13,7 @@ export class VendorBillsService {
   constructor(
     private prisma: PrismaService,
     private budgetsService: BudgetsService,
-  ) {}
+  ) { }
 
   async create(createVendorBillDto: CreateVendorBillDto, userId: string) {
     // Calculate totals

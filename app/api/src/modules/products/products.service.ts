@@ -13,18 +13,32 @@ import { Status } from "@prisma/client";
 export class ProductsService {
   constructor(private prisma: PrismaService) {}
 
+  /**
+   * Gets the organization ID for the user (for multi-tenant data isolation).
+   * All users in the same organization share the same data.
+   */
+  private async getOrganizationId(userId: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+
+    return user?.organizationId || null;
+  }
+
   async create(createProductDto: CreateProductDto, userId?: string) {
+    // Get organization for data isolation
+    const organizationId = userId ? await this.getOrganizationId(userId) : null;
+
     // Handle category (create if name provided, use ID otherwise)
     let categoryId = createProductDto.categoryId;
 
     if (createProductDto.categoryName && !categoryId) {
-      // Find or create category
+      // Find or create category scoped to organization
       let category = await this.prisma.productCategory.findFirst({
         where: {
           name: createProductDto.categoryName,
-          OR: userId
-            ? [{ createdById: userId }, { createdById: null }]
-            : undefined,
+          organizationId: organizationId,
         },
       });
 
@@ -32,6 +46,7 @@ export class ProductsService {
         category = await this.prisma.productCategory.create({
           data: {
             name: createProductDto.categoryName,
+            organizationId: organizationId,
             createdById: userId,
           },
         });
@@ -60,14 +75,17 @@ export class ProductsService {
   }
 
   async findAll(query: ProductQueryDto, userId?: string) {
+    // Get organization for data isolation
+    const organizationId = userId ? await this.getOrganizationId(userId) : null;
+
     const where: any = {};
 
     if (query.search) {
       where.name = { contains: query.search, mode: "insensitive" };
     }
 
-    if (userId) {
-      where.createdById = userId;
+    if (organizationId) {
+      where.createdById = organizationId;
     }
 
     if (query.categoryId) {
@@ -121,20 +139,35 @@ export class ProductsService {
     return product;
   }
 
-  async update(id: string, updateProductDto: UpdateProductDto) {
+  async update(
+    id: string,
+    updateProductDto: UpdateProductDto,
+    userId?: string,
+  ) {
     await this.findOne(id);
+
+    // Get organization for data isolation
+    const organizationId = userId ? await this.getOrganizationId(userId) : null;
 
     // Handle category update
     let categoryId = updateProductDto.categoryId;
 
     if (updateProductDto.categoryName && !categoryId) {
+      // Find or create category scoped to organization
       let category = await this.prisma.productCategory.findFirst({
-        where: { name: updateProductDto.categoryName },
+        where: {
+          name: updateProductDto.categoryName,
+          organizationId: organizationId,
+        },
       });
 
       if (!category) {
         category = await this.prisma.productCategory.create({
-          data: { name: updateProductDto.categoryName },
+          data: {
+            name: updateProductDto.categoryName,
+            organizationId: organizationId,
+            createdById: userId,
+          },
         });
       }
 
@@ -174,9 +207,14 @@ export class ProductsService {
 
   // Category management
   async getCategories(userId?: string) {
+    // Get organization for data isolation
+    const organizationId = userId ? await this.getOrganizationId(userId) : null;
+
     const where: any = {};
-    if (userId) {
-      where.OR = [{ createdById: userId }, { createdById: null }];
+
+    // Filter categories by organization for data isolation
+    if (organizationId) {
+      where.organizationId = organizationId;
     }
     return this.prisma.productCategory.findMany({
       where,
@@ -187,14 +225,15 @@ export class ProductsService {
   }
 
   async createCategory(name: string, userId?: string) {
-    // Check for existing
-    const where: any = { name };
-    if (userId) {
-      where.OR = [{ createdById: userId }, { createdById: null }];
-    }
+    // Get organization for data isolation
+    const organizationId = userId ? await this.getOrganizationId(userId) : null;
 
+    // Check for existing category in this organization
     const existing = await this.prisma.productCategory.findFirst({
-      where,
+      where: {
+        name,
+        organizationId: organizationId,
+      },
     });
 
     if (existing) {
@@ -202,7 +241,11 @@ export class ProductsService {
     }
 
     return this.prisma.productCategory.create({
-      data: { name, createdById: userId },
+      data: {
+        name,
+        organizationId: organizationId,
+        createdById: userId,
+      },
     });
   }
 }
