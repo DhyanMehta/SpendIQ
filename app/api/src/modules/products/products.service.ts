@@ -20,12 +20,20 @@ export class ProductsService {
     if (createProductDto.categoryName && !categoryId) {
       // Find or create category
       let category = await this.prisma.productCategory.findFirst({
-        where: { name: createProductDto.categoryName },
+        where: {
+          name: createProductDto.categoryName,
+          OR: userId
+            ? [{ createdById: userId }, { createdById: null }]
+            : undefined,
+        },
       });
 
       if (!category) {
         category = await this.prisma.productCategory.create({
-          data: { name: createProductDto.categoryName },
+          data: {
+            name: createProductDto.categoryName,
+            createdById: userId,
+          },
         });
       }
 
@@ -165,18 +173,28 @@ export class ProductsService {
   }
 
   // Category management
-  async getCategories() {
+  async getCategories(userId?: string) {
+    const where: any = {};
+    if (userId) {
+      where.OR = [{ createdById: userId }, { createdById: null }];
+    }
     return this.prisma.productCategory.findMany({
+      where,
       orderBy: {
         name: "asc",
       },
     });
   }
 
-  async createCategory(name: string) {
+  async createCategory(name: string, userId?: string) {
     // Check for existing
+    const where: any = { name };
+    if (userId) {
+      where.OR = [{ createdById: userId }, { createdById: null }];
+    }
+
     const existing = await this.prisma.productCategory.findFirst({
-      where: { name },
+      where,
     });
 
     if (existing) {
@@ -184,7 +202,7 @@ export class ProductsService {
     }
 
     return this.prisma.productCategory.create({
-      data: { name },
+      data: { name, createdById: userId },
     });
   }
 }

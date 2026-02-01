@@ -1,12 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../common/database/prisma.service";
 import { ConfigService } from "@nestjs/config";
-import Razorpay from "razorpay";
 import * as crypto from "crypto";
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const Razorpay = require("razorpay");
 
 @Injectable()
 export class PortalService {
-  private razorpay: Razorpay;
+  private razorpay: any;
 
   constructor(
     private readonly prisma: PrismaService,
@@ -180,7 +182,7 @@ export class PortalService {
 
     // Get OUT_INVOICE (Customer Invoices) - these are the ones customers need to pay
     const invoices = await this.prisma.invoice.findMany({
-      where: { 
+      where: {
         partnerId: contactId,
         type: "OUT_INVOICE", // Only customer invoices
       },

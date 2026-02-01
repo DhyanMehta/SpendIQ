@@ -35,6 +35,7 @@ model User {
   createdJournalEntries JournalEntry[]  @relation("JournalEntryCreator")
   createdAnalyticalAccounts AnalyticalAccount[] @relation("AnalyticalAccountCreator")
   createdAutoAnalyticalRules AutoAnalyticalRule[] @relation("AutoAnalyticalRuleCreator")
+  createdCategories     ProductCategory[] @relation("CategoryCreator")
 
   contact        Contact?   @relation("PortalUser")
   
@@ -183,6 +184,9 @@ model ProductCategory {
   children    ProductCategory[] @relation("CategoryHierarchy")
   products    Product[]
   autoRules   AutoAnalyticalRule[]
+  
+  createdById String?
+  creator     User?    @relation("CategoryCreator", fields: [createdById], references: [id])
 
   @@map("product_categories")
 }

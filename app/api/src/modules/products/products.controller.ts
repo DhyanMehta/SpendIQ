@@ -38,14 +38,14 @@ export class ProductsController {
 
   @Get("categories")
   @Roles(Role.ADMIN)
-  getCategories() {
-    return this.productsService.getCategories();
+  getCategories(@CurrentUser() user: any) {
+    return this.productsService.getCategories(user.id);
   }
 
   @Post("categories")
   @Roles(Role.ADMIN)
-  createCategory(@Body("name") name: string) {
-    return this.productsService.createCategory(name);
+  createCategory(@Body("name") name: string, @CurrentUser() user: any) {
+    return this.productsService.createCategory(name, user.id);
   }
 
   @Get(":id")

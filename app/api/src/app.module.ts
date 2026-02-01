@@ -11,7 +11,7 @@ import { PortalModule } from "./modules/portal/portal.module";
 import { AccountingModule } from "./modules/accounting/accounting.module";
 import { DashboardModule } from "./modules/dashboard/dashboard.module";
 import { PurchaseModule } from "./modules/purchase/purchase.module";
-// import { AnalyticsModule } from "./modules/analytics/analytics.module"; // Temporarily disabled - Budget model needs to be updated
+import { AnalyticsModule } from "./modules/analytics/analytics.module";
 // import { VendorBillsModule } from "./modules/vendor-bills/vendor-bills.module";
 import { PaymentsModule } from "./modules/payments/payments.module";
 import { SalesModule } from "./modules/sales/sales.module";
@@ -30,9 +30,9 @@ import { UsersModule } from "./modules/users/users.module";
     PortalModule,
     AccountingModule,
     DashboardModule,
-    DashboardModule,
+
     PurchaseModule, // Centralized Purchase Module
-    // AnalyticsModule, // Temporarily disabled - Budget model needs to be updated
+    AnalyticsModule,
     // VendorBillsModule, // Merged into PurchaseModule or to be refactored
     PaymentsModule,
     SalesModule,

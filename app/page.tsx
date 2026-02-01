@@ -1,3 +1,5 @@
+"use client";
+
 import { Hero } from "@/components/landing/hero";
 import { ProblemSolution } from "@/components/landing/problem-solution";
 import { Features } from "@/components/landing/features";
@@ -7,8 +9,19 @@ import { Footer } from "@/components/landing/footer";
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Building2 } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 
 export default function LandingPage() {
+  const router = useRouter();
+  const [isLoggedIn] = useState(() => {
+    // Check if user is logged in during initialization
+    if (typeof window !== "undefined") {
+      return !!localStorage.getItem("accessToken");
+    }
+    return false;
+  });
+
   return (
     <div className="min-h-screen flex flex-col bg-background font-sans text-foreground">
       {/* Global Navbar */}
@@ -43,17 +56,29 @@ export default function LandingPage() {
           </nav>
 
           <div className="flex items-center gap-4">
-            <Link
-              href="/login"
-              className="text-sm font-medium hover:underline underline-offset-4 hidden sm:block text-muted-foreground"
-            >
-              Sign in
-            </Link>
-            <Link href="/register">
-              <Button size="sm" className="shadow-lg shadow-primary/20">
-                Get Started
+            {isLoggedIn ? (
+              <Button
+                size="sm"
+                className="shadow-lg shadow-primary/20"
+                onClick={() => router.push("/dashboard")}
+              >
+                Go to Dashboard
               </Button>
-            </Link>
+            ) : (
+              <>
+                <Link
+                  href="/login"
+                  className="text-sm font-medium hover:underline underline-offset-4 hidden sm:block text-muted-foreground"
+                >
+                  Sign in
+                </Link>
+                <Link href="/register">
+                  <Button size="sm" className="shadow-lg shadow-primary/20">
+                    Get Started
+                  </Button>
+                </Link>
+              </>
+            )}
           </div>
         </div>
       </header>
@@ -64,7 +89,6 @@ export default function LandingPage() {
         <Features />
         <SystemFlow />
         <Trust />
-        
       </main>
 
       <Footer />
