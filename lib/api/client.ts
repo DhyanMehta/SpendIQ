@@ -301,6 +301,10 @@ export const budgetsApi = {
     const res = await apiClient.get("/budgets", { params });
     return res.data;
   },
+  getById: async (id: string) => {
+    const res = await apiClient.get(`/budgets/${id}`);
+    return res.data;
+  },
   getOne: async (id: string) => {
     const res = await apiClient.get(`/budgets/${id}`);
     return res.data;
@@ -311,6 +315,18 @@ export const budgetsApi = {
   },
   update: async (id: string, data: any) => {
     const res = await apiClient.patch(`/budgets/${id}`, data);
+    return res.data;
+  },
+  approve: async (id: string) => {
+    const res = await apiClient.patch(`/budgets/${id}/approve`);
+    return res.data;
+  },
+  revise: async (id: string, data: any) => {
+    const res = await apiClient.post(`/budgets/${id}/revise`, data);
+    return res.data;
+  },
+  archive: async (id: string) => {
+    const res = await apiClient.patch(`/budgets/${id}/archive`);
     return res.data;
   },
   delete: async (id: string) => {

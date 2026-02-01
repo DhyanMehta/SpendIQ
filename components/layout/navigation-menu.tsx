@@ -26,7 +26,7 @@ const menuSections: MenuSection[] = [
         label: "Auto Analytic Model",
         href: "/dashboard/account/auto-analytic",
       },
-      { label: "Budget", href: "/dashboard" },
+      { label: "Budget", href: "/dashboard/budgets" },
     ],
   },
   {

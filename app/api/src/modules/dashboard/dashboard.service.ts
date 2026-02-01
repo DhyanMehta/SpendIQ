@@ -35,7 +35,17 @@ export class DashboardService {
    * @param userId - The authenticated user's ID
    * @returns Object with balance, income, expense, savings, and savingsRate
    */
-  async getMetrics(userId: string) {
+  async getMetrics(userId?: string) {
+    if (!userId) {
+      return {
+        balance: 0,
+        income: 0,
+        expense: 0,
+        savings: 0,
+        savingsRate: 0,
+      };
+    }
+
     const organizationId = await this.getOrganizationId(userId);
 
     // 1. Calculate Income (Sales) - Include both DRAFT and POSTED invoices
@@ -85,7 +95,11 @@ export class DashboardService {
    * @param userId - The authenticated user's ID
    * @returns Array of objects with { name: monthName, income: number, expense: number }
    */
-  async getMoneyFlow(userId: string) {
+  async getMoneyFlow(userId?: string) {
+    if (!userId) {
+      return [];
+    }
+
     const organizationId = await this.getOrganizationId(userId);
 
     // Get all DRAFT and POSTED invoices (exclude CANCELLED)
@@ -145,7 +159,11 @@ export class DashboardService {
    * @param userId - The authenticated user's ID
    * @returns Array of Invoice objects with partner relation
    */
-  async getRecentTransactions(userId: string) {
+  async getRecentTransactions(userId?: string) {
+    if (!userId) {
+      return [];
+    }
+
     const organizationId = await this.getOrganizationId(userId);
 
     return this.prisma.invoice.findMany({
@@ -168,10 +186,27 @@ export class DashboardService {
    * @param userId - The authenticated user's ID
    * @returns Array of objects with { name, value, color } for chart rendering
    */
-  async getBudgetUtilization(userId: string) {
-    // Get budgets created by this user
+  async getBudgetUtilization(userId?: string) {
+    if (!userId) {
+      return [];
+    }
+
+    // Build organization-based filter
+    const organizationFilter: any = {};
+
+    const organizationId = await this.getOrganizationId(userId);
+    if (organizationId) {
+      organizationFilter.OR = [
+        { createdBy: organizationId },
+        { creator: { organizationId: organizationId } },
+      ];
+    } else {
+      organizationFilter.createdBy = userId;
+    }
+
+    // Get budgets created by this user or organization
     const budgets = await this.prisma.budget.findMany({
-      where: { createdBy: userId },
+      where: organizationFilter,
       take: 5,
       orderBy: { createdAt: "desc" },
     });

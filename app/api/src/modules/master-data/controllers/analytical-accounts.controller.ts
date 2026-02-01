@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards } from "@nestjs/common";
+import { Controller, Get, Post, Body, Param, UseGuards, Request } from "@nestjs/common";
 import { AnalyticalAccountsService } from "../services/analytical-accounts.service";
 import { CreateAnalyticalAccountDto } from "../dto/create-analytical-account.dto";
 import { Role } from "@prisma/client";
@@ -9,21 +9,21 @@ import { Roles } from "../../../common/decorators/roles.decorator";
 @Controller("analytical-accounts")
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class AnalyticalAccountsController {
-  constructor(private readonly service: AnalyticalAccountsService) {}
+  constructor(private readonly service: AnalyticalAccountsService) { }
 
   @Post()
   @Roles(Role.ADMIN)
-  create(@Body() dto: CreateAnalyticalAccountDto) {
-    return this.service.create(dto);
+  create(@Body() dto: CreateAnalyticalAccountDto, @Request() req: any) {
+    return this.service.create(dto, req?.user?.userId || req?.user?.id);
   }
 
   @Get()
-  findAll() {
-    return this.service.findAll();
+  findAll(@Request() req: any) {
+    return this.service.findAll(req?.user?.userId || req?.user?.id);
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
-    return this.service.findOne(id);
+  findOne(@Param("id") id: string, @Request() req: any) {
+    return this.service.findOne(id, req?.user?.userId || req?.user?.id);
   }
 }

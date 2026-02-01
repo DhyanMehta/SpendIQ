@@ -104,9 +104,24 @@ export class AnalyticalAccountService {
   /**
    * Get single analytical account by ID
    */
-  async findOne(id: string) {
-    const account = await this.prisma.analyticalAccount.findUnique({
-      where: { id },
+  async findOne(id: string, userId?: string) {
+    const where: any = { id };
+
+    // Add organization filtering if userId provided
+    if (userId) {
+      const organizationId = await this.getOrganizationId(userId);
+      if (organizationId) {
+        where.OR = [
+          { createdById: organizationId },
+          { creator: { organizationId: organizationId } },
+        ];
+      } else {
+        where.createdById = userId;
+      }
+    }
+
+    const account = await this.prisma.analyticalAccount.findFirst({
+      where,
       include: {
         parent: true,
         children: true,

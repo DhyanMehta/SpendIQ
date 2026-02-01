@@ -4,26 +4,72 @@ import { CreateAnalyticalAccountDto } from "../dto/create-analytical-account.dto
 
 @Injectable()
 export class AnalyticalAccountsService {
-  constructor(private prisma: PrismaService) {}
+  constructor(private prisma: PrismaService) { }
 
-  async create(dto: CreateAnalyticalAccountDto) {
+  /**
+   * Gets the organization ID for the user (for multi-tenant data isolation).
+   */
+  private async getOrganizationId(userId: string): Promise<string | null> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+
+    return user?.organizationId || null;
+  }
+
+  async create(dto: CreateAnalyticalAccountDto, userId?: string) {
     return this.prisma.analyticalAccount.create({
-      data: dto,
+      data: {
+        ...dto,
+        createdById: userId,
+      },
     });
   }
 
-  async findAll() {
+  async findAll(userId?: string) {
+    // Build organization-based filter
+    const where: any = {};
+
+    if (userId) {
+      const organizationId = await this.getOrganizationId(userId);
+      if (organizationId) {
+        where.OR = [
+          { createdById: organizationId },
+          { creator: { organizationId: organizationId } },
+        ];
+      } else {
+        where.createdById = userId;
+      }
+    }
+
     // Return tree structure or flat list?
     // For now, flat list with parent info. Frontend can build tree.
     return this.prisma.analyticalAccount.findMany({
+      where,
       include: { parent: true, children: true },
       orderBy: { code: "asc" },
     });
   }
 
-  async findOne(id: string) {
-    return this.prisma.analyticalAccount.findUnique({
-      where: { id },
+  async findOne(id: string, userId?: string) {
+    // Build organization-based filter
+    const where: any = { id };
+
+    if (userId) {
+      const organizationId = await this.getOrganizationId(userId);
+      if (organizationId) {
+        where.OR = [
+          { createdById: organizationId },
+          { creator: { organizationId: organizationId } },
+        ];
+      } else {
+        where.createdById = userId;
+      }
+    }
+
+    return this.prisma.analyticalAccount.findFirst({
+      where,
       include: {
         parent: true,
         children: true,

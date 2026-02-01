@@ -37,8 +37,8 @@ export class AnalyticalAccountController {
   }
 
   @Get(":id")
-  findOne(@Param("id") id: string) {
-    return this.analyticalAccountService.findOne(id);
+  findOne(@Param("id") id: string, @Request() req: any) {
+    return this.analyticalAccountService.findOne(id, req?.user?.userId || req?.user?.id);
   }
 
   @Post()

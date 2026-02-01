@@ -19,8 +19,8 @@ export class DashboardController {
    * @returns Object containing balance, income, expense, savings, and savingsRate
    */
   @Get("metrics")
-  async getMetrics(@Request() req) {
-    return this.dashboardService.getMetrics(req.user.id);
+  async getMetrics(@Request() req: any) {
+    return this.dashboardService.getMetrics(req?.user?.userId || req?.user?.id);
   }
 
   /**
@@ -29,8 +29,10 @@ export class DashboardController {
    * @returns Array of monthly income/expense data for visualization
    */
   @Get("money-flow")
-  async getMoneyFlow(@Request() req) {
-    return this.dashboardService.getMoneyFlow(req.user.id);
+  async getMoneyFlow(@Request() req: any) {
+    return this.dashboardService.getMoneyFlow(
+      req?.user?.userId || req?.user?.id,
+    );
   }
 
   /**
@@ -39,8 +41,10 @@ export class DashboardController {
    * @returns Array of recent invoices with partner details
    */
   @Get("recent-transactions")
-  async getRecentTransactions(@Request() req) {
-    return this.dashboardService.getRecentTransactions(req.user.id);
+  async getRecentTransactions(@Request() req: any) {
+    return this.dashboardService.getRecentTransactions(
+      req?.user?.userId || req?.user?.id,
+    );
   }
 
   /**
@@ -49,7 +53,9 @@ export class DashboardController {
    * @returns Array of budget usage data for donut chart visualization
    */
   @Get("budget-usage")
-  async getBudgetUsage(@Request() req) {
-    return this.dashboardService.getBudgetUtilization(req.user.id);
+  async getBudgetUsage(@Request() req: any) {
+    return this.dashboardService.getBudgetUtilization(
+      req?.user?.userId || req?.user?.id,
+    );
   }
 }
