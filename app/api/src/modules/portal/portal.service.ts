@@ -1,12 +1,14 @@
 import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../common/database/prisma.service";
 import { ConfigService } from "@nestjs/config";
-import Razorpay from "razorpay";
 import * as crypto from "crypto";
+
+// eslint-disable-next-line @typescript-eslint/no-var-requires
+const Razorpay = require("razorpay");
 
 @Injectable()
 export class PortalService {
-  private razorpay: Razorpay;
+  private razorpay: any;
 
   constructor(
     private readonly prisma: PrismaService,

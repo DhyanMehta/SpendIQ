@@ -4,42 +4,42 @@ import { InvoiceType, InvoiceStatus } from "@prisma/client";
 
 /**
  * Dashboard Service
- * 
+ *
  * Provides aggregated business metrics and chart data for the main dashboard.
  * Queries invoices and budgets to compute KPIs and visualizations.
  */
 @Injectable()
 export class DashboardService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   /**
    * Calculate main dashboard KPI metrics
-   * 
+   *
    * Computes:
    * - Income: Sum of all posted customer invoices (OUT_INVOICE)
    * - Expense: Sum of all posted vendor bills (IN_INVOICE)
    * - Balance: Income minus Expense
    * - Savings Rate: Percentage of income retained as profit
-   * 
+   *
    * @returns Object with balance, income, expense, savings, and savingsRate
    */
   async getMetrics() {
-    // 1. Calculate Income (Sales)
+    // 1. Calculate Income (Sales) - Include both DRAFT and POSTED invoices
     const incomeAgg = await this.prisma.invoice.aggregate({
       _sum: { totalAmount: true },
       where: {
         type: InvoiceType.OUT_INVOICE,
-        status: InvoiceStatus.POSTED,
+        status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] },
       },
     });
     const income = Number(incomeAgg._sum.totalAmount || 0);
 
-    // 2. Calculate Expenses (Vendor Bills)
+    // 2. Calculate Expenses (Vendor Bills) - Include both DRAFT and POSTED invoices
     const expenseAgg = await this.prisma.invoice.aggregate({
       _sum: { totalAmount: true },
       where: {
         type: InvoiceType.IN_INVOICE,
-        status: InvoiceStatus.POSTED,
+        status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] },
       },
     });
     const expense = Number(expenseAgg._sum.totalAmount || 0);
@@ -61,28 +61,41 @@ export class DashboardService {
 
   /**
    * Get monthly income vs expense data for money flow chart
-   * 
+   *
    * Groups all posted invoices by month and separates into:
    * - Income: Customer invoices (OUT_INVOICE)
    * - Expense: Vendor bills (IN_INVOICE)
-   * 
+   *
    * @returns Array of objects with { name: monthName, income: number, expense: number }
    */
   async getMoneyFlow() {
-    // Get all posted invoices
+    // Get all DRAFT and POSTED invoices (exclude CANCELLED)
     const allInvoices = await this.prisma.invoice.findMany({
-      where: { status: InvoiceStatus.POSTED },
+      where: { status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] } },
       select: { date: true, type: true, totalAmount: true },
     });
 
     // Month name mapping
     const months = [
-      "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-      "Jul", "Aug", "Sep", "Oct", "Nov", "Dec",
+      "Jan",
+      "Feb",
+      "Mar",
+      "Apr",
+      "May",
+      "Jun",
+      "Jul",
+      "Aug",
+      "Sep",
+      "Oct",
+      "Nov",
+      "Dec",
     ];
 
     // Group by month
-    const groups: Record<string, { name: string; income: number; expense: number }> = {};
+    const groups: Record<
+      string,
+      { name: string; income: number; expense: number }
+    > = {};
 
     allInvoices.forEach((inv) => {
       const date = new Date(inv.date);
@@ -103,14 +116,17 @@ export class DashboardService {
 
   /**
    * Get the 5 most recent transactions
-   * 
+   *
    * Returns recent invoices (both sales and purchases) with partner details.
    * Ordered by date descending.
-   * 
+   *
    * @returns Array of Invoice objects with partner relation
    */
   async getRecentTransactions() {
     return this.prisma.invoice.findMany({
+      where: {
+        status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] },
+      },
       take: 5,
       orderBy: { date: "desc" },
       include: { partner: true },
@@ -119,10 +135,10 @@ export class DashboardService {
 
   /**
    * Get budget utilization data for donut chart
-   * 
+   *
    * Returns the user's budgets formatted for visualization.
    * Each budget becomes a slice with name, value (budgeted amount), and color.
-   * 
+   *
    * @param userId - The authenticated user's ID
    * @returns Array of objects with { name, value, color } for chart rendering
    */

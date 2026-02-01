@@ -56,7 +56,7 @@ export class ContactsController {
 
   @Post(":id/portal")
   @Roles(Role.ADMIN)
-  enablePortalAccess(@Param("id") id: string) {
-    return this.contactsService.enablePortalAccess(id);
+  enablePortalAccess(@Param("id") id: string, @CurrentUser() user: any) {
+    return this.contactsService.enablePortalAccess(id, user.id);
   }
 }
