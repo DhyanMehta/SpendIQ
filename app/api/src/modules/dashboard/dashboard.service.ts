@@ -13,6 +13,17 @@ export class DashboardService {
   constructor(private readonly prisma: PrismaService) {}
 
   /**
+   * Helper to get organization ID for a user
+   */
+  private async getOrganizationId(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+    return user?.organizationId || userId; // Fallback to userId if no org (shouldn't happen for valid users)
+  }
+
+  /**
    * Calculate main dashboard KPI metrics
    *
    * Computes:
@@ -21,15 +32,19 @@ export class DashboardService {
    * - Balance: Income minus Expense
    * - Savings Rate: Percentage of income retained as profit
    *
+   * @param userId - The authenticated user's ID
    * @returns Object with balance, income, expense, savings, and savingsRate
    */
-  async getMetrics() {
+  async getMetrics(userId: string) {
+    const organizationId = await this.getOrganizationId(userId);
+
     // 1. Calculate Income (Sales) - Include both DRAFT and POSTED invoices
     const incomeAgg = await this.prisma.invoice.aggregate({
       _sum: { totalAmount: true },
       where: {
         type: InvoiceType.OUT_INVOICE,
         status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] },
+        creator: { organizationId }, // Filter by organization
       },
     });
     const income = Number(incomeAgg._sum.totalAmount || 0);
@@ -40,6 +55,7 @@ export class DashboardService {
       where: {
         type: InvoiceType.IN_INVOICE,
         status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] },
+        creator: { organizationId }, // Filter by organization
       },
     });
     const expense = Number(expenseAgg._sum.totalAmount || 0);
@@ -66,12 +82,18 @@ export class DashboardService {
    * - Income: Customer invoices (OUT_INVOICE)
    * - Expense: Vendor bills (IN_INVOICE)
    *
+   * @param userId - The authenticated user's ID
    * @returns Array of objects with { name: monthName, income: number, expense: number }
    */
-  async getMoneyFlow() {
+  async getMoneyFlow(userId: string) {
+    const organizationId = await this.getOrganizationId(userId);
+
     // Get all DRAFT and POSTED invoices (exclude CANCELLED)
     const allInvoices = await this.prisma.invoice.findMany({
-      where: { status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] } },
+      where: {
+        status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] },
+        creator: { organizationId }, // Filter by organization
+      },
       select: { date: true, type: true, totalAmount: true },
     });
 
@@ -120,12 +142,16 @@ export class DashboardService {
    * Returns recent invoices (both sales and purchases) with partner details.
    * Ordered by date descending.
    *
+   * @param userId - The authenticated user's ID
    * @returns Array of Invoice objects with partner relation
    */
-  async getRecentTransactions() {
+  async getRecentTransactions(userId: string) {
+    const organizationId = await this.getOrganizationId(userId);
+
     return this.prisma.invoice.findMany({
       where: {
         status: { in: [InvoiceStatus.DRAFT, InvoiceStatus.POSTED] },
+        creator: { organizationId }, // Filter by organization
       },
       take: 5,
       orderBy: { date: "desc" },

@@ -26,8 +26,14 @@ export class AnalyticalAccountController {
   ) {}
 
   @Get()
-  findAll(@Query("includeArchived") includeArchived?: string) {
-    return this.analyticalAccountService.findAll(includeArchived === "true");
+  findAll(
+    @Request() req: any,
+    @Query("includeArchived") includeArchived?: string,
+  ) {
+    return this.analyticalAccountService.findAll(
+      req.user.userId,
+      includeArchived === "true",
+    );
   }
 
   @Get(":id")

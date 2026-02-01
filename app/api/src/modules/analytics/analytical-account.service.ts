@@ -13,10 +13,25 @@ export class AnalyticalAccountService {
   constructor(private prisma: PrismaService) {}
 
   /**
-   * List all analytical accounts (exclude archived by default)
+   * Helper to get organization ID for a user
    */
-  async findAll(includeArchived = false) {
-    const where: any = {};
+  private async getOrganizationId(userId: string): Promise<string> {
+    const user = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { organizationId: true },
+    });
+    return user?.organizationId || userId;
+  }
+
+  /**
+   * List all analytical accounts (exclude archived by default)
+   * Filtered by user's organization for data isolation
+   */
+  async findAll(userId: string, includeArchived = false) {
+    const organizationId = await this.getOrganizationId(userId);
+    const where: any = {
+      creator: { organizationId },
+    };
 
     if (!includeArchived) {
       where.status = { not: AnalyticStatus.ARCHIVED };
