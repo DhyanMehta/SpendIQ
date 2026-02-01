@@ -8,6 +8,33 @@ datasource db {
 }
 
 // ============================================================================
+// ORGANIZATION
+// ============================================================================
+
+model Organization {
+  id        String   @id @default(uuid())
+  name      String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  users                User[]
+  contacts             Contact[]
+  products             Product[]
+  productCategories    ProductCategory[]
+  analyticalAccounts   AnalyticalAccount[]
+  autoAnalyticalRules  AutoAnalyticalRule[]
+  budgets              Budget[]
+  purchaseOrders       PurchaseOrder[]
+  salesOrders          SalesOrder[]
+  invoices             Invoice[]
+  payments             Payment[]
+  journalEntries       JournalEntry[]
+
+  @@map("organizations")
+}
+
+// ============================================================================
 // AUTHENTICATION & ACCESS CONTROL
 // ============================================================================
 
@@ -21,12 +48,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // Organization tracking - points to the root admin of this user's organization
-  // Self-registered admins have organizationId = their own id
-  // Users created by admins inherit their creator's organizationId
-  organizationId String?
-  organization   User?   @relation("OrganizationMembers", fields: [organizationId], references: [id])
-  orgMembers     User[]  @relation("OrganizationMembers")
+  // Organization membership
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   sessions  Session[]
   auditLogs AuditLog[]
@@ -100,6 +124,10 @@ model Contact {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Organization isolation
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   createdById String?
   creator     User?   @relation("ContactCreator", fields: [createdById], references: [id])
 
@@ -152,6 +180,10 @@ model Product {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Organization isolation
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   createdById String?
   creator     User?   @relation("ProductCreator", fields: [createdById], references: [id])
 
@@ -193,10 +225,12 @@ model ProductCategory {
   createdAt DateTime @default(now())
   updatedAt DateTime @default(now()) @updatedAt
 
-  // Organization-level data isolation
-  organizationId String?
-  createdById    String?
-  creator        User?   @relation("CategoryCreator", fields: [createdById], references: [id])
+  // Organization isolation
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
+  createdById String?
+  creator     User?   @relation("CategoryCreator", fields: [createdById], references: [id])
 
   @@map("product_categories")
 }
@@ -219,6 +253,10 @@ model AnalyticalAccount {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Organization isolation
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   createdById String?
   creator     User?   @relation("AnalyticalAccountCreator", fields: [createdById], references: [id])
@@ -289,6 +327,10 @@ model Budget {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Organization isolation
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   @@index([analyticAccountId])
   @@index([startDate, endDate])
   @@index([status])
@@ -330,6 +372,10 @@ model PurchaseOrder {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Organization isolation
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   createdById String?
   creator     User?   @relation("POCreator", fields: [createdById], references: [id])
@@ -378,6 +424,10 @@ model SalesOrder {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Organization isolation
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   createdById String?
   creator     User?   @relation("SOCreator", fields: [createdById], references: [id])
@@ -441,6 +491,10 @@ model Invoice {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Organization isolation
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   createdById String?
   creator     User?   @relation("InvoiceCreator", fields: [createdById], references: [id])
@@ -516,6 +570,10 @@ model Payment {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
+  // Organization isolation
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+
   createdById String?
   creator     User?   @relation("PaymentCreator", fields: [createdById], references: [id])
 
@@ -569,6 +627,10 @@ model JournalEntry {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Organization isolation
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   createdById String?
   creator     User?   @relation("JournalEntryCreator", fields: [createdById], references: [id])
@@ -643,6 +705,10 @@ model AutoAnalyticalRule {
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+
+  // Organization isolation
+  organizationId String
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
 
   createdById String?
   creator     User?   @relation("AutoAnalyticalRuleCreator", fields: [createdById], references: [id])

@@ -29,16 +29,14 @@ export class AnalyticalAccountService {
    */
   async findAll(userId: string, includeArchived = false) {
     const organizationId = await this.getOrganizationId(userId);
-    const where: any = {
-      creator: { organizationId },
-    };
 
-    if (!includeArchived) {
-      where.status = { not: AnalyticStatus.ARCHIVED };
-    }
+    // Debug logging
+    console.log("[AnalyticalAccountService] findAll called");
+    console.log("[AnalyticalAccountService] userId:", userId);
+    console.log("[AnalyticalAccountService] organizationId:", organizationId);
 
-    return this.prisma.analyticalAccount.findMany({
-      where,
+    // Fetch all accounts with creator info
+    const allAccounts = await this.prisma.analyticalAccount.findMany({
       include: {
         parent: true,
         children: true,
@@ -47,11 +45,60 @@ export class AnalyticalAccountService {
             id: true,
             name: true,
             email: true,
+            organizationId: true,
           },
         },
       },
-      orderBy: [{ status: "asc" }, { code: "asc" }],
+      orderBy: [{ code: "asc" }],
     });
+
+    console.log(
+      "[AnalyticalAccountService] Total accounts in DB:",
+      allAccounts.length,
+    );
+
+    // Filter by organization in memory
+    const filteredAccounts = allAccounts.filter((account) => {
+      // If account has no creator, skip it
+      if (!account.creator) {
+        console.log(
+          "[AnalyticalAccountService] Account",
+          account.code,
+          "has no creator",
+        );
+        return false;
+      }
+
+      // Check if creator's organizationId matches
+      const creatorOrgId = account.creator.organizationId || account.creator.id;
+      const matches = creatorOrgId === organizationId;
+
+      console.log(
+        "[AnalyticalAccountService] Account",
+        account.code,
+        "creator org:",
+        creatorOrgId,
+        "user org:",
+        organizationId,
+        "matches:",
+        matches,
+      );
+
+      // Apply archived filter if needed
+      if (!includeArchived && account.status === "ARCHIVED") {
+        return false;
+      }
+
+      return matches;
+    });
+
+    console.log(
+      "[AnalyticalAccountService] Filtered to",
+      filteredAccounts.length,
+      "accounts",
+    );
+
+    return filteredAccounts;
   }
 
   /**
